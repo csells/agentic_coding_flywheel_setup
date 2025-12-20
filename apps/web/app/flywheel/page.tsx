@@ -808,7 +808,7 @@ export default function FlywheelPage() {
               </Link>
             </div>
 
-            <p className="text-xs text-muted-foreground">Built for the agentic coding community</p>
+            <p className="text-[12px] text-muted-foreground">Built for the agentic coding community</p>
           </div>
         </div>
       </footer>
