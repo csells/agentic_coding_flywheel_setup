@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { PartyPopper, Rocket, BookOpen, ExternalLink, Sparkles } from "lucide-react";
+import { PartyPopper, Rocket, BookOpen, ExternalLink, Sparkles, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
 import { markStepComplete, setCompletedSteps, TOTAL_STEPS } from "@/lib/wizardSteps";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import {
+  SimplerGuide,
+  GuideSection,
+  GuideStep,
+  GuideExplain,
+  GuideTip,
+} from "@/components/simpler-guide";
 
 // Confetti colors
 const CONFETTI_COLORS = [
@@ -192,6 +201,123 @@ export default function LaunchOnboardingPage() {
               </li>
             </ul>
           </div>
+        </div>
+      </Card>
+
+      {/* Beginner Guide */}
+      <SimplerGuide>
+        <div className="space-y-6">
+          <GuideExplain term="What just happened?">
+            You&apos;ve just finished setting up a professional-grade cloud development
+            environment! Your VPS now has:
+            <ul className="mt-3 space-y-2">
+              <li>
+                <strong>A powerful shell (zsh)</strong> — A modern command-line interface
+                with auto-suggestions and beautiful colors
+              </li>
+              <li>
+                <strong>AI coding assistants</strong> — Claude Code, Codex, and Gemini CLI
+                are ready to help you write code
+              </li>
+              <li>
+                <strong>Development tools</strong> — Fast search (ripgrep), git interface
+                (lazygit), and more
+              </li>
+              <li>
+                <strong>Programming languages</strong> — JavaScript/TypeScript (bun),
+                Python (uv), Rust, and Go
+              </li>
+            </ul>
+          </GuideExplain>
+
+          <GuideSection title="Understanding the Tools">
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium text-foreground">cc (Claude Code)</p>
+                <p className="text-sm text-muted-foreground">
+                  This is your primary AI coding assistant. Type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">cc</code>
+                  in any project folder and Claude will help you write, debug, and improve
+                  your code. It can read your files, make changes, run tests, and more.
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">ntm (Named Tmux Manager)</p>
+                <p className="text-sm text-muted-foreground">
+                  This manages your terminal &quot;sessions&quot;. When you run{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ntm new myproject</code>,
+                  it creates a persistent workspace that stays running even if you disconnect.
+                  Perfect for long-running tasks!
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">rg (ripgrep)</p>
+                <p className="text-sm text-muted-foreground">
+                  Ultra-fast code search. Type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">rg &quot;searchterm&quot;</code>
+                  to find any text across all your files in milliseconds. Essential for
+                  navigating large codebases.
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">lazygit</p>
+                <p className="text-sm text-muted-foreground">
+                  A visual interface for Git. Much easier than remembering git commands!
+                  Type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">lazygit</code>
+                  in any git repository to stage, commit, push, and manage branches visually.
+                </p>
+              </div>
+            </div>
+          </GuideSection>
+
+          <GuideSection title="Your First Steps">
+            <div className="space-y-4">
+              <GuideStep number={1} title="Run the onboarding tutorial">
+                Type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">onboard</code>
+                and press Enter. This interactive tutorial teaches you the basics of your
+                new environment.
+              </GuideStep>
+
+              <GuideStep number={2} title="Create your first project session">
+                Type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ntm new hello-world</code>
+                to create a dedicated workspace for a test project.
+              </GuideStep>
+
+              <GuideStep number={3} title="Try Claude Code">
+                In your project folder, type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">cc</code>
+                and ask it to &quot;create a simple hello world script in Python&quot;. Watch
+                the magic happen!
+              </GuideStep>
+            </div>
+          </GuideSection>
+
+          <GuideTip>
+            <strong>Bookmark this page!</strong> You can always come back here to review
+            the basic commands. Once you&apos;re comfortable with these basics, continue to
+            Part Two to learn the advanced multi-agent workflow that makes this setup truly
+            powerful.
+          </GuideTip>
+        </div>
+      </SimplerGuide>
+
+      {/* Continue to Part Two */}
+      <Card className="border-2 border-[oklch(0.7_0.2_330/0.3)] bg-gradient-to-r from-[oklch(0.7_0.2_330/0.05)] to-[oklch(0.75_0.18_195/0.05)] p-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-6 w-6 text-[oklch(0.7_0.2_330)]" />
+            <h2 className="text-xl font-semibold">Ready for the Advanced Workflow?</h2>
+          </div>
+          <p className="text-muted-foreground">
+            Part One is complete! Continue to Part Two to learn the powerful multi-agent
+            workflow that lets you build production-ready software at incredible speed.
+            You&apos;ll learn how to orchestrate multiple AI agents working in parallel,
+            use the &quot;best of all worlds&quot; planning technique, and run agent swarms
+            that build features while you sleep.
+          </p>
+          <Link href="/workflow">
+            <Button size="lg" className="w-full sm:w-auto">
+              Continue to Part Two: The Workflow
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </Card>
 
