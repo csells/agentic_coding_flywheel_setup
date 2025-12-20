@@ -8,6 +8,7 @@ import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
+import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { useVPSIP, useUserOS, useMounted } from "@/lib/userPreferences";
 import {
   SimplerGuide,
@@ -134,6 +135,13 @@ export default function SSHConnectPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const mounted = useMounted();
 
+  // Analytics tracking for this wizard step
+  const { markComplete } = useWizardAnalytics({
+    step: "ssh_connect",
+    stepNumber: 6,
+    stepTitle: "SSH Connect",
+  });
+
   // Redirect if missing required data (after hydration)
   useEffect(() => {
     if (mounted) {
@@ -146,10 +154,11 @@ export default function SSHConnectPage() {
   }, [mounted, vpsIP, os, router]);
 
   const handleContinue = useCallback(() => {
+    markComplete();
     markStepComplete(6);
     setIsNavigating(true);
     router.push("/wizard/run-installer");
-  }, [router]);
+  }, [router, markComplete]);
 
   if (!mounted || !vpsIP || !os) {
     return (

@@ -137,7 +137,10 @@ export function useVPSIP(): [string | null, (ip: string) => void] {
 
   const mutation = useMutation({
     mutationFn: async (newIP: string) => {
-      setVPSIP(newIP);
+      const success = setVPSIP(newIP);
+      if (!success) {
+        throw new Error("Invalid IP address");
+      }
       return newIP;
     },
     onSuccess: (newIP) => {
