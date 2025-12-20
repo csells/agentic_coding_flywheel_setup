@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Terminal, Check } from "lucide-react";
-import { Button, Card, CommandCard } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CommandCard } from "@/components/command-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useUserOS, useMounted } from "@/lib/userPreferences";
 
@@ -102,7 +104,7 @@ function WindowsContent() {
           Open Windows Terminal and run this command. You should see a version
           number.
         </p>
-        <CommandCard
+<CommandCard
           command="ssh -V"
           description="Check SSH version"
           showCheckbox

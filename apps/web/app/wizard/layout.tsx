@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { Stepper, StepperMobile } from "@/components";
+import { Stepper, StepperMobile } from "@/components/stepper";
 import { WIZARD_STEPS, getStepBySlug } from "@/lib/wizardSteps";
 
 export default function WizardLayout({

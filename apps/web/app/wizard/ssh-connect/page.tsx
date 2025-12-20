@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Terminal, AlertCircle, Check, ChevronDown } from "lucide-react";
-import { Button, Card, CommandCard } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CommandCard } from "@/components/command-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useVPSIP, useUserOS, useMounted } from "@/lib/userPreferences";

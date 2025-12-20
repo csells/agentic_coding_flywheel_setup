@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { PartyPopper, Rocket, BookOpen, ExternalLink } from "lucide-react";
-import { Card, CommandCard } from "@/components";
+import { Card } from "@/components/ui/card";
+import { CommandCard } from "@/components/command-card";
 import { markStepComplete, setCompletedSteps, TOTAL_STEPS } from "@/lib/wizardSteps";
 
 export default function LaunchOnboardingPage() {

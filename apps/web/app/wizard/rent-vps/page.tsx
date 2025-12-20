@@ -3,7 +3,8 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Check, Server, ChevronDown } from "lucide-react";
-import { Button, Card } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 

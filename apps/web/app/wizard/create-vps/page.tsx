@@ -3,7 +3,9 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, AlertCircle, Server, ChevronDown } from "lucide-react";
-import { Button, Card, Checkbox } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useVPSIP, isValidIP } from "@/lib/userPreferences";

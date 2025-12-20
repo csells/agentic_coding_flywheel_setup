@@ -3,7 +3,9 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle } from "lucide-react";
-import { Button, Card, CommandCard } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CommandCard } from "@/components/command-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 
 const QUICK_CHECKS = [

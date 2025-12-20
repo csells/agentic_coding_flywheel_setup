@@ -142,6 +142,9 @@ function emitStepsChange() {
 }
 
 function subscribeToSteps(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {}; // No-op on server
+  }
   stepsListeners.add(callback);
   const handleStorage = (e: StorageEvent) => {
     if (e.key === COMPLETED_STEPS_KEY) callback();

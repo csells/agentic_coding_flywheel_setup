@@ -46,6 +46,9 @@ function getOS(): OS {
 
 // Subscribe to storage changes for OS preference
 function subscribeToOS(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {}; // No-op on server
+  }
   const handleStorage = (e: StorageEvent) => {
     if (e.key === "acfs-user-os") callback();
   };
@@ -63,6 +66,9 @@ function createCompletionStore(persistKey: string | undefined) {
       return localStorage.getItem(key) === "true";
     },
     subscribe: (callback: () => void) => {
+      if (typeof window === "undefined") {
+        return () => {}; // No-op on server
+      }
       const handleStorage = (e: StorageEvent) => {
         if (e.key === key) callback();
       };

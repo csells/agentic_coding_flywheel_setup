@@ -87,6 +87,9 @@ function emitStorageChange() {
 }
 
 function subscribeToStorage(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {}; // No-op on server
+  }
   storageListeners.add(callback);
   // Also listen for storage events from other tabs
   const handleStorage = () => callback();
@@ -158,6 +161,9 @@ function getMounted() {
 }
 
 function subscribeToMounted(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {}; // No-op on server
+  }
   mountedListeners.add(callback);
   return () => mountedListeners.delete(callback);
 }

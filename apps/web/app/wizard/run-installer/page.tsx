@@ -10,7 +10,9 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import { Button, Card, CommandCard } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CommandCard } from "@/components/command-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 

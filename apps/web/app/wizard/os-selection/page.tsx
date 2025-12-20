@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Apple, Monitor } from "lucide-react";
-import { Card } from "@/components";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import {
