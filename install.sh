@@ -435,7 +435,7 @@ setup_shell() {
     if [[ ! -d "$omz_dir" ]]; then
         log_detail "Installing Oh My Zsh for $TARGET_USER"
         # Run as target user to install in their home
-        run_as_target sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+        run_as_target bash -c 'set -euo pipefail; curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh -s -- --unattended'
     fi
 
     # Install Powerlevel10k theme
@@ -532,13 +532,13 @@ install_languages() {
     # Bun (install as target user)
     if [[ ! -d "$TARGET_HOME/.bun" ]]; then
         log_detail "Installing Bun for $TARGET_USER"
-        run_as_target bash -c 'curl -fsSL https://bun.sh/install | bash'
+        run_as_target bash -c 'set -euo pipefail; curl -fsSL https://bun.sh/install | bash'
     fi
 
     # Rust (install as target user)
     if [[ ! -d "$TARGET_HOME/.cargo" ]]; then
         log_detail "Installing Rust for $TARGET_USER"
-        run_as_target bash -c 'curl https://sh.rustup.rs -sSf | sh -s -- -y'
+        run_as_target bash -c 'set -euo pipefail; curl -sSf https://sh.rustup.rs | sh -s -- -y'
     fi
 
     # Go (system-wide)
@@ -550,19 +550,19 @@ install_languages() {
     # uv (install as target user)
     if [[ ! -f "$TARGET_HOME/.local/bin/uv" ]]; then
         log_detail "Installing uv for $TARGET_USER"
-        run_as_target bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+        run_as_target bash -c 'set -euo pipefail; curl -LsSf https://astral.sh/uv/install.sh | sh'
     fi
 
     # Atuin (install as target user)
     if [[ ! -d "$TARGET_HOME/.atuin" ]]; then
         log_detail "Installing Atuin for $TARGET_USER"
-        run_as_target bash -c 'curl --proto "=https" --tlsv1.2 -LsSf https://setup.atuin.sh | sh'
+        run_as_target bash -c 'set -euo pipefail; curl --proto "=https" --tlsv1.2 -LsSf https://setup.atuin.sh | sh'
     fi
 
     # Zoxide (install as target user)
     if [[ ! -f "$TARGET_HOME/.local/bin/zoxide" ]]; then
         log_detail "Installing Zoxide for $TARGET_USER"
-        run_as_target bash -c 'curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh'
+        run_as_target bash -c 'set -euo pipefail; curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh'
     fi
 
     log_success "Language runtimes installed"
@@ -721,8 +721,9 @@ install_stack() {
     # Helper to run install scripts as target user
     run_install_as_target() {
         local url="$1"
-        local args="${2:-}"
-        run_as_target bash -c "curl -fsSL '$url' 2>/dev/null | bash -s -- $args" || return 1
+        shift || true
+        # shellcheck disable=SC2016
+        run_as_target bash -c 'set -euo pipefail; url="$1"; shift; curl -fsSL "$url" | bash -s -- "$@"' _ "$url" "$@"
     }
 
     # NTM (Named Tmux Manager)
@@ -731,11 +732,11 @@ install_stack() {
 
     # MCP Agent Mail
     log_detail "Installing MCP Agent Mail"
-    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh?$(date +%s)" "--yes" || log_warn "MCP Agent Mail installation may have failed"
+    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh?$(date +%s)" --yes || log_warn "MCP Agent Mail installation may have failed"
 
     # Ultimate Bug Scanner
     log_detail "Installing Ultimate Bug Scanner"
-    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh?$(date +%s)" "--easy-mode" || log_warn "UBS installation may have failed"
+    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh?$(date +%s)" --easy-mode || log_warn "UBS installation may have failed"
 
     # Beads Viewer
     log_detail "Installing Beads Viewer"
@@ -743,11 +744,11 @@ install_stack() {
 
     # CASS (Coding Agent Session Search)
     log_detail "Installing CASS"
-    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh" "--easy-mode --verify" || log_warn "CASS installation may have failed"
+    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh" --easy-mode --verify || log_warn "CASS installation may have failed"
 
     # CASS Memory System
     log_detail "Installing CASS Memory System"
-    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh" "--easy-mode --verify" || log_warn "CM installation may have failed"
+    run_install_as_target "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh" --easy-mode --verify || log_warn "CM installation may have failed"
 
     # CAAM (Coding Agent Account Manager)
     log_detail "Installing CAAM"
