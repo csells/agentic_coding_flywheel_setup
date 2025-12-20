@@ -149,7 +149,8 @@ export function Stepper({ currentStep, onStepClick, className }: StepperProps) {
 
 /**
  * Mobile-friendly bottom navigation version of the stepper.
- * Shows a compact progress bar with dots and current step info.
+ * Shows a compact progress bar with touch-friendly dots (44px targets).
+ * Supports swipe gestures to navigate between steps.
  */
 export function StepperMobile({
   currentStep,
@@ -159,57 +160,142 @@ export function StepperMobile({
   const [completedSteps] = useCompletedSteps();
 
   const currentStepData = WIZARD_STEPS.find((s) => s.id === currentStep);
-  const progress = (completedSteps.length / WIZARD_STEPS.length) * 100;
+  const progress = (currentStep / WIZARD_STEPS.length) * 100;
+  const highestCompleted = Math.max(0, ...completedSteps);
+
+  // Swipe gesture handler
+  const bind = useDrag(
+    ({ direction: [dx], velocity: [vx], active, movement: [mx] }) => {
+      // Only trigger on release with sufficient velocity or distance
+      if (!active && (Math.abs(vx) > 0.3 || Math.abs(mx) > 50)) {
+        if (dx > 0 && currentStep > 1) {
+          // Swipe right = go back
+          const prevStep = currentStep - 1;
+          if (completedSteps.includes(prevStep) || prevStep <= highestCompleted + 1) {
+            onStepClick?.(prevStep);
+          }
+        } else if (dx < 0 && currentStep < WIZARD_STEPS.length) {
+          // Swipe left = go forward
+          const nextStep = currentStep + 1;
+          if (completedSteps.includes(nextStep) || nextStep <= highestCompleted + 1) {
+            onStepClick?.(nextStep);
+          }
+        }
+      }
+    },
+    {
+      axis: "x",
+      filterTaps: true,
+      threshold: 10,
+    }
+  );
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Progress bar with gradient */}
-      <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full bg-gradient-to-r from-primary via-[oklch(0.7_0.2_330)] to-primary transition-all duration-500"
-          style={{ width: `${progress}%`, backgroundSize: "200% 100%" }}
+    <div {...bind()} className={cn("touch-pan-x select-none", className)}>
+      {/* Progress bar with animated gradient */}
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <motion.div
+          className="h-full bg-gradient-to-r from-primary via-[oklch(0.7_0.2_330)] to-primary"
+          initial={false}
+          animate={{ width: `${progress}%` }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          style={{ backgroundSize: "200% 100%" }}
         />
       </div>
 
-      {/* Step dots */}
-      <div className="flex items-center justify-center gap-1.5">
+      {/* Touch-friendly step dots - 44px minimum touch targets */}
+      <div className="mt-3 flex items-center justify-center">
         {WIZARD_STEPS.map((step) => {
           const isActive = step.id === currentStep;
           const isCompleted = completedSteps.includes(step.id);
-          const highestCompleted = Math.max(0, ...completedSteps);
           const isClickable = isCompleted || step.id <= highestCompleted + 1;
 
           return (
-            <button
+            <motion.button
               key={step.id}
               type="button"
               onClick={isClickable && onStepClick ? () => onStepClick(step.id) : undefined}
               disabled={!isClickable}
               className={cn(
-                "relative h-2 w-2 rounded-full transition-all duration-300",
-                isCompleted && "bg-[oklch(0.72_0.19_145)]",
-                isActive && !isCompleted && "bg-primary scale-125",
-                !isActive && !isCompleted && "bg-muted-foreground/30",
+                "relative flex items-center justify-center touch-target",
                 isClickable && "cursor-pointer",
-                !isClickable && "cursor-not-allowed"
+                !isClickable && "cursor-not-allowed opacity-50"
               )}
+              style={{ minWidth: 44, minHeight: 44 }}
               aria-label={`Go to step ${step.id}: ${step.title}`}
+              aria-current={isActive ? "step" : undefined}
+              whileTap={isClickable ? { scale: 0.9 } : undefined}
             >
-              {/* Active step ring */}
+              {/* The visible dot */}
+              <motion.div
+                className={cn(
+                  "rounded-full transition-colors",
+                  isCompleted && "bg-[oklch(0.72_0.19_145)]",
+                  isActive && !isCompleted && "bg-primary",
+                  !isActive && !isCompleted && "bg-muted-foreground/30"
+                )}
+                initial={false}
+                animate={{
+                  width: isActive ? 14 : 10,
+                  height: isActive ? 14 : 10,
+                }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              />
+
+              {/* Active step pulse ring */}
               {isActive && (
-                <span className="absolute inset-[-3px] animate-ping rounded-full bg-primary/40" />
+                <motion.div
+                  className="absolute rounded-full border-2 border-primary/50"
+                  initial={{ width: 14, height: 14, opacity: 0.8 }}
+                  animate={{
+                    width: [14, 28, 14],
+                    height: [14, 28, 14],
+                    opacity: [0.8, 0, 0.8],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
               )}
-            </button>
+
+              {/* Completed checkmark overlay */}
+              {isCompleted && (
+                <motion.div
+                  className="absolute flex items-center justify-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                >
+                  <Check
+                    className="h-2.5 w-2.5 text-[oklch(0.15_0.02_145)]"
+                    strokeWidth={3}
+                  />
+                </motion.div>
+              )}
+            </motion.button>
           );
         })}
       </div>
 
-      {/* Current step label */}
+      {/* Current step label and swipe hint */}
       {currentStepData && (
-        <div className="text-center">
-          <span className="text-sm font-medium text-foreground">
+        <div className="mt-2 text-center">
+          <motion.span
+            key={currentStepData.id}
+            className="text-sm font-medium text-foreground"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
             {currentStepData.title}
-          </span>
+          </motion.span>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Step {currentStep} of {WIZARD_STEPS.length}
+            <span className="mx-1.5 opacity-50">|</span>
+            <span className="opacity-70">Swipe to navigate</span>
+          </p>
         </div>
       )}
     </div>
