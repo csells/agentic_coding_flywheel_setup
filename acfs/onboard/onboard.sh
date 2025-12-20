@@ -152,11 +152,20 @@ _mark_completed() {
 
         if [[ "$already" == "false" ]]; then
             # Rewrite the file with new completed entry
-            local new_completed="$completed $idx"
+            # Trim leading/trailing whitespace and handle empty $completed
+            local new_completed
+            if [[ -z "${completed// }" ]]; then
+                new_completed="$idx"
+            else
+                new_completed="$completed $idx"
+            fi
+            # Convert spaces to commas, trim leading/trailing commas
+            local json_array
+            json_array=$(echo "$new_completed" | tr -s ' ' ',' | sed 's/^,//;s/,$//')
             local next=$((idx + 1))
             cat > "$PROGRESS_FILE" <<EOF
 {
-  "completed": [$(echo "$new_completed" | tr ' ' ',')],
+  "completed": [$json_array],
   "current": $next,
   "started_at": "$(date -Iseconds)"
 }
