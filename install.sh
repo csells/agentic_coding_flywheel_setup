@@ -214,6 +214,45 @@ _source_reliability_libs() {
 }
 _source_reliability_libs
 
+# ============================================================
+# Source Ubuntu upgrade library for auto-upgrade functionality (nb4)
+# ============================================================
+_source_ubuntu_upgrade_lib() {
+    # Already loaded?
+    if [[ -n "${ACFS_UBUNTU_UPGRADE_LOADED:-}" ]]; then
+        return 0
+    fi
+
+    # Try local file first (when running from repo)
+    if [[ -n "${SCRIPT_DIR:-}" ]] && [[ -f "$SCRIPT_DIR/scripts/lib/ubuntu_upgrade.sh" ]]; then
+        # shellcheck source=scripts/lib/ubuntu_upgrade.sh
+        source "$SCRIPT_DIR/scripts/lib/ubuntu_upgrade.sh"
+        export ACFS_UBUNTU_UPGRADE_LOADED=1
+        return 0
+    fi
+
+    # Try relative path (when running from repo root)
+    if [[ -f "./scripts/lib/ubuntu_upgrade.sh" ]]; then
+        source "./scripts/lib/ubuntu_upgrade.sh"
+        export ACFS_UBUNTU_UPGRADE_LOADED=1
+        return 0
+    fi
+
+    # Download for curl|bash scenario
+    if command -v curl &>/dev/null; then
+        local tmp_upgrade="/tmp/acfs-ubuntu-upgrade-$$.sh"
+        if curl -fsSL "$ACFS_RAW/scripts/lib/ubuntu_upgrade.sh" -o "$tmp_upgrade" 2>/dev/null; then
+            source "$tmp_upgrade"
+            rm -f "$tmp_upgrade"
+            export ACFS_UBUNTU_UPGRADE_LOADED=1
+            return 0
+        fi
+    fi
+
+    # If we can't load it, return failure (caller should handle)
+    return 1
+}
+
 # ACFS Color scheme (Catppuccin Mocha inspired)
 ACFS_PRIMARY="#89b4fa"
 ACFS_SUCCESS="#a6e3a1"
@@ -311,12 +350,21 @@ print_banner() {
 # Logging functions (with gum enhancement)
 # ============================================================
 log_step() {
+    local step="${1:-}"
+    local message="${2:-}"
+
+    # Allow single-arg usage: treat the arg as the message
+    if [[ -z "$message" ]]; then
+        message="$step"
+        step="*"
+    fi
+
     if [[ "$HAS_GUM" == "true" ]]; then
-        gum style --foreground "$ACFS_PRIMARY" --bold "[$1]" | tr -d '\n' >&2
+        gum style --foreground "$ACFS_PRIMARY" --bold "[$step]" | tr -d '\n' >&2
         echo -n " " >&2
-        gum style "$2" >&2
+        gum style "$message" >&2
     else
-        echo -e "${BLUE}[$1]${NC} $2" >&2
+        echo -e "${BLUE}[$step]${NC} $message" >&2
     fi
 }
 
