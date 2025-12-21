@@ -350,6 +350,11 @@ export default function CreateVPSPage() {
             Enter the IP address of your new VPS. You&apos;ll find this in your
             provider&apos;s control panel after the VPS is created.
           </p>
+          <p className="text-xs text-muted-foreground/70">
+            <strong>Privacy note:</strong> This website does not store or transmit your IP address
+            to any server. It&apos;s saved only in your browser&apos;s local storage to help you
+            complete the wizard steps.
+          </p>
           <form.Field
             name="ipAddress"
             validators={{
