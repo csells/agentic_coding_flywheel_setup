@@ -389,6 +389,14 @@ export default function CreateVPSPage() {
                 }
                 return undefined;
               },
+              onBlur: ({ value }) => {
+                // Duplicate validation on blur for Firefox/Safari compatibility
+                if (!value) return undefined;
+                if (!isValidIP(value)) {
+                  return "Please enter a valid IP address (e.g., 192.168.1.1)";
+                }
+                return undefined;
+              },
               onSubmit: ({ value }) => {
                 if (!value) {
                   return "Please enter your VPS IP address";

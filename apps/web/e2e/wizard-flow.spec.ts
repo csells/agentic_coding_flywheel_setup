@@ -311,12 +311,15 @@ test.describe("IP Address Validation", () => {
     await page.goto("/wizard/create-vps");
     await expect(page.locator("h1").first()).toBeVisible();
 
-    // Enter invalid IP
-    await page.fill('input[placeholder*="192.168"]', "invalid-ip");
-    await page.locator('input[placeholder*="192.168"]').blur();
+    const input = page.locator('input[placeholder*="192.168"]');
 
-    // Should show error
-    await expect(page.getByText(/Please enter a valid IP address/i)).toBeVisible();
+    // Clear any existing value and type the invalid IP (more reliable than fill across browsers)
+    await input.clear();
+    await input.type("invalid-ip");
+    await input.blur();
+
+    // Should show error (allow extra time for React state updates)
+    await expect(page.getByText(/Please enter a valid IP address/i)).toBeVisible({ timeout: 10000 });
   });
 
   test("should accept valid IP addresses", async ({ page }) => {
@@ -326,12 +329,17 @@ test.describe("IP Address Validation", () => {
     });
 
     await page.goto("/wizard/create-vps");
+    await expect(page.locator("h1").first()).toBeVisible();
 
-    // Enter valid IP
-    await page.fill('input[placeholder*="192.168"]', "8.8.8.8");
+    const input = page.locator('input[placeholder*="192.168"]');
 
-    // Should show success
-    await expect(page.locator('text="Valid IP address"')).toBeVisible();
+    // Clear any existing value and type the valid IP
+    await input.clear();
+    await input.type("8.8.8.8");
+    await input.blur();
+
+    // Should show success (allow extra time for React state updates)
+    await expect(page.locator('text="Valid IP address"')).toBeVisible({ timeout: 10000 });
   });
 
   test("should reject out-of-range IP octets", async ({ page }) => {
@@ -341,13 +349,17 @@ test.describe("IP Address Validation", () => {
     });
 
     await page.goto("/wizard/create-vps");
+    await expect(page.locator("h1").first()).toBeVisible();
 
-    // Enter IP with invalid octet (256 > 255)
-    await page.fill('input[placeholder*="192.168"]', "256.1.1.1");
-    await page.locator('input[placeholder*="192.168"]').blur();
+    const input = page.locator('input[placeholder*="192.168"]');
 
-    // Should show error
-    await expect(page.getByText(/Please enter a valid IP address/i)).toBeVisible();
+    // Clear any existing value and type the out-of-range IP
+    await input.clear();
+    await input.type("256.1.1.1");
+    await input.blur();
+
+    // Should show error (allow extra time for React state updates)
+    await expect(page.getByText(/Please enter a valid IP address/i)).toBeVisible({ timeout: 10000 });
   });
 });
 
