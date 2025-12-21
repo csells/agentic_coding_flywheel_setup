@@ -1,8 +1,8 @@
 # ACFS Module Manifest
 # Single source of truth for all tools installed by the Agentic Coding Flywheel Setup
-# Version: 0.1.0
+# Version: 2.0.0 (Schema vNext)
 
-version: 1
+version: 2
 name: agentic_coding_flywheel_setup
 id: acfs
 
@@ -17,23 +17,40 @@ modules:
   # ============================================================
   - id: base.system
     description: Base packages + sane defaults
+    category: base
+    phase: 1
+    run_as: root
+    optional: false
+    enabled_by_default: true
+    tags: [critical]
+    installed_check:
+      run_as: current
+      command: "command -v curl && command -v git && command -v jq"
     install:
-      - sudo apt-get update -y
-      - sudo apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential
+      - apt-get update -y
+      - apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential
     verify:
       - curl --version
       - git --version
       - jq --version
 
   # ============================================================
-  # PHASE 2: User normalization
+  # PHASE 2: User normalization (ORCHESTRATION-ONLY)
   # ============================================================
   - id: users.ubuntu
     description: Ensure ubuntu user + passwordless sudo + ssh keys
-    install:
+    category: users
+    phase: 2
+    run_as: root
+    optional: false
+    enabled_by_default: true
+    generated: false
+    tags: [orchestration, critical]
+    notes:
       - "Ensure user ubuntu exists with home /home/ubuntu"
       - "Write /etc/sudoers.d/90-ubuntu-acfs: ubuntu ALL=(ALL) NOPASSWD:ALL"
       - "Copy authorized_keys from invoking user to /home/ubuntu/.ssh/"
+    install: []
     verify:
       - id ubuntu
       - sudo -n true
@@ -43,45 +60,80 @@ modules:
   # ============================================================
   - id: base.filesystem
     description: Create workspace and ACFS directories
+    category: base
+    phase: 3
+    run_as: root
+    optional: false
+    enabled_by_default: true
+    tags: [critical]
+    dependencies:
+      - users.ubuntu
+    installed_check:
+      run_as: target_user
+      command: "test -d /data/projects && test -d ~/.acfs"
     install:
-      - "Create /data/projects and /data/cache directories"
-      - "Create ~/.acfs/{zsh,tmux,bin,docs,logs} directories"
+      - mkdir -p /data/projects /data/cache
+      - chown -R ubuntu:ubuntu /data
     verify:
       - test -d /data/projects
       - test -d ~/.acfs
+    notes:
+      - "~/.acfs directories created by target_user shell init"
 
   # ============================================================
   # PHASE 4: Shell setup (zsh + oh-my-zsh + p10k)
   # ============================================================
   - id: shell.zsh
     description: Zsh + Oh My Zsh + Powerlevel10k + plugins + canonical ACFS zshrc
+    category: shell
+    phase: 4
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [critical, shell-ux]
+    dependencies:
+      - base.system
+      - base.filesystem
+    installed_check:
+      run_as: target_user
+      command: "command -v zsh && test -f ~/.acfs/zsh/acfs.zshrc"
     install:
       - sudo apt-get install -y zsh
-      - "Install Oh My Zsh (non-interactive)"
-      - "Install powerlevel10k theme"
-      - "Install plugins: zsh-autosuggestions, zsh-syntax-highlighting"
-      - "Write ~/.acfs/zsh/acfs.zshrc and source it from ~/.zshrc"
     verify:
       - zsh --version
       - test -f ~/.acfs/zsh/acfs.zshrc
+    notes:
+      - "Oh My Zsh and plugins installed via verified upstream installers"
+      - "acfs.zshrc written from acfs/ assets"
 
   # ============================================================
   # PHASE 5: CLI tools
   # ============================================================
   - id: cli.modern
     description: Modern CLI tools referenced by the zshrc intent
+    category: cli
+    phase: 5
+    run_as: root
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, cli-modern]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: current
+      command: "command -v rg && command -v tmux && command -v fzf"
     install:
-      - sudo apt-get install -y ripgrep tmux fzf direnv jq gh git-lfs lsof dnsutils netcat-openbsd strace rsync
-      - sudo apt-get install -y lsd || true
-      - sudo apt-get install -y eza || true
-      - sudo apt-get install -y bat || sudo apt-get install -y batcat || true
-      - sudo apt-get install -y fd-find || true
-      - sudo apt-get install -y btop || true
-      - sudo apt-get install -y dust || true
-      - sudo apt-get install -y neovim || true
-      - sudo apt-get install -y docker.io docker-compose-plugin || true
-      - sudo apt-get install -y lazygit || true
-      - sudo apt-get install -y lazydocker || true
+      - apt-get install -y ripgrep tmux fzf direnv jq gh git-lfs lsof dnsutils netcat-openbsd strace rsync
+      - apt-get install -y lsd || true
+      - apt-get install -y eza || true
+      - apt-get install -y bat || apt-get install -y batcat || true
+      - apt-get install -y fd-find || true
+      - apt-get install -y btop || true
+      - apt-get install -y dust || true
+      - apt-get install -y neovim || true
+      - apt-get install -y docker.io docker-compose-plugin || true
+      - apt-get install -y lazygit || true
+      - apt-get install -y lazydocker || true
     verify:
       - rg --version
       - tmux -V
@@ -100,56 +152,137 @@ modules:
   # ============================================================
   - id: lang.bun
     description: Bun runtime for JS tooling and global CLIs
-    install:
-      - |
-        curl -fsSL https://bun.sh/install | bash
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [critical, runtime]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: target_user
+      command: "test -x ~/.bun/bin/bun"
+    verified_installer:
+      tool: bun
+      runner: bash
+    install: []
     verify:
       - ~/.bun/bin/bun --version
 
   - id: lang.uv
     description: uv Python tooling (fast venvs)
-    install:
-      - |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [critical, runtime]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: target_user
+      command: "test -x ~/.local/bin/uv"
+    verified_installer:
+      tool: uv
+      runner: sh
+    install: []
     verify:
       - ~/.local/bin/uv --version
-    notes:
-      - "uv install per Astral docs"
 
   - id: lang.rust
     description: Rust + cargo
-    install:
-      - |
-        curl https://sh.rustup.rs -sSf | sh -s -- -y
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [critical, runtime]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: target_user
+      command: "test -x ~/.cargo/bin/cargo"
+    verified_installer:
+      tool: rustup
+      runner: sh
+      args: ["-s", "--", "-y"]
+    install: []
     verify:
       - ~/.cargo/bin/cargo --version
 
   - id: lang.go
     description: Go toolchain
+    category: lang
+    phase: 6
+    run_as: root
+    optional: false
+    enabled_by_default: true
+    tags: [critical, runtime]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: current
+      command: "command -v go"
     install:
-      - sudo apt-get install -y golang-go
+      - apt-get install -y golang-go
     verify:
       - go version
 
-  # Additional CLI tools (atuin, zoxide, ast-grep installed with languages)
+  # Additional CLI tools in phase 6
   - id: tools.atuin
     description: Atuin shell history (Ctrl-R superpowers)
-    install:
-      - |
-        curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, shell-ux]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: target_user
+      command: "test -x ~/.atuin/bin/atuin"
+    verified_installer:
+      tool: atuin
+      runner: sh
+    install: []
     verify:
       - ~/.atuin/bin/atuin --version
 
   - id: tools.zoxide
     description: Zoxide (better cd)
-    install:
-      - |
-        curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, shell-ux]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: target_user
+      command: "command -v zoxide"
+    verified_installer:
+      tool: zoxide
+      runner: sh
+    install: []
     verify:
       - command -v zoxide
 
   - id: tools.ast_grep
     description: ast-grep (used by UBS for syntax-aware scanning)
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v sg"
     install:
       - ~/.cargo/bin/cargo install ast-grep --locked
     verify:
@@ -160,13 +293,39 @@ modules:
   # ============================================================
   - id: agents.claude
     description: Claude Code
-    install:
-      - "Install claude code via official method"
+    category: agents
+    phase: 7
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, agent]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v claude"
+    verified_installer:
+      tool: claude
+      runner: bash
+    install: []
     verify:
       - claude --version || claude --help
+    notes:
+      - "Install claude code via official method"
 
   - id: agents.codex
     description: OpenAI Codex CLI
+    category: agents
+    phase: 7
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, agent]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v codex"
     install:
       - ~/.bun/bin/bun install -g @openai/codex@latest
     verify:
@@ -174,6 +333,17 @@ modules:
 
   - id: agents.gemini
     description: Google Gemini CLI
+    category: agents
+    phase: 7
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, agent]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v gemini"
     install:
       - ~/.bun/bin/bun install -g @google/gemini-cli@latest
     verify:
@@ -184,22 +354,60 @@ modules:
   # ============================================================
   - id: tools.vault
     description: HashiCorp Vault CLI
-    install:
-      - "Install Vault via official HashiCorp instructions (apt repo or binary)"
+    category: cloud
+    phase: 8
+    run_as: root
+    optional: true
+    enabled_by_default: false
+    tags: [optional, cloud]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: current
+      command: "command -v vault"
+    verified_installer:
+      tool: vault
+      runner: bash
+    install: []
     verify:
       - vault --version
+    notes:
+      - "Install Vault via official HashiCorp instructions (apt repo or binary)"
 
   - id: db.postgres18
     description: PostgreSQL 18
+    category: cloud
+    phase: 8
+    run_as: root
+    optional: true
+    enabled_by_default: false
+    tags: [optional, database]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: current
+      command: "command -v psql"
     install:
-      - "Add PGDG apt repo"
-      - sudo apt-get install -y postgresql-18
+      - apt-get install -y postgresql-18
     verify:
       - psql --version
       - systemctl status postgresql --no-pager || true
+    notes:
+      - "Add PGDG apt repo if postgresql-18 not available"
 
   - id: cloud.wrangler
     description: Cloudflare Wrangler CLI
+    category: cloud
+    phase: 8
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [optional, cloud]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v wrangler"
     install:
       - ~/.bun/bin/bun install -g wrangler
     verify:
@@ -207,6 +415,17 @@ modules:
 
   - id: cloud.supabase
     description: Supabase CLI
+    category: cloud
+    phase: 8
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [optional, cloud]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v supabase"
     install:
       - ~/.bun/bin/bun install -g supabase
     verify:
@@ -214,6 +433,17 @@ modules:
 
   - id: cloud.vercel
     description: Vercel CLI
+    category: cloud
+    phase: 8
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [optional, cloud]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v vercel"
     install:
       - ~/.bun/bin/bun install -g vercel
     verify:
@@ -224,68 +454,173 @@ modules:
   # ============================================================
   - id: stack.ntm
     description: Named tmux manager (agent cockpit)
-    install:
-      - |
-        curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - cli.modern
+    installed_check:
+      run_as: target_user
+      command: "command -v ntm"
+    verified_installer:
+      tool: ntm
+      runner: bash
+    install: []
     verify:
       - ntm --help
 
   - id: stack.mcp_agent_mail
     description: Like gmail for coding agents; MCP HTTP server + token; installs beads tools
-    install:
-      - |
-        curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh?$(date +%s)" | bash -s -- --yes
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.bun
+      - lang.uv
+    installed_check:
+      run_as: target_user
+      command: "command -v am"
+    verified_installer:
+      tool: mcp_agent_mail
+      runner: bash
+      args: ["--yes"]
+    install: []
     verify:
       - command -v am
       - curl -fsS http://127.0.0.1:8765/health || true
 
   - id: stack.ultimate_bug_scanner
     description: UBS bug scanning (easy-mode)
-    install:
-      - |
-        curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh?$(date +%s)" | bash -s -- --easy-mode
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.bun
+      - lang.uv
+      - tools.ast_grep
+    installed_check:
+      run_as: target_user
+      command: "command -v ubs"
+    verified_installer:
+      tool: ubs
+      runner: bash
+      args: ["--easy-mode"]
+    install: []
     verify:
       - ubs --help
       - ubs doctor || true
 
   - id: stack.beads_viewer
     description: bv TUI for Beads tasks
-    install:
-      - |
-        curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh?$(date +%s)" | bash
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.go
+    installed_check:
+      run_as: target_user
+      command: "command -v bv || command -v bd"
+    verified_installer:
+      tool: beads_viewer
+      runner: bash
+    install: []
     verify:
       - bv --help || bv --version
 
   - id: stack.cass
     description: Unified search across agent session history
-    install:
-      - |
-        curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh | bash -s -- --easy-mode --verify
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.rust
+      - lang.uv
+    installed_check:
+      run_as: target_user
+      command: "command -v cass"
+    verified_installer:
+      tool: cass
+      runner: bash
+      args: ["--easy-mode", "--verify"]
+    install: []
     verify:
       - cass --help || cass --version
 
   - id: stack.cm
     description: Procedural memory for agents (cass-memory)
-    install:
-      - |
-        curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | bash -s -- --easy-mode --verify
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.rust
+      - lang.uv
+    installed_check:
+      run_as: target_user
+      command: "command -v cm"
+    verified_installer:
+      tool: cm
+      runner: bash
+      args: ["--easy-mode", "--verify"]
+    install: []
     verify:
       - cm --version
       - cm doctor --json || true
 
   - id: stack.caam
     description: Instant auth switching for agent CLIs
-    install:
-      - |
-        curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh?$(date +%s)" | bash
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.bun
+    installed_check:
+      run_as: target_user
+      command: "command -v caam"
+    verified_installer:
+      tool: caam
+      runner: bash
+    install: []
     verify:
       - caam status || caam --help
 
   - id: stack.slb
     description: Two-person rule for dangerous commands (optional guardrails)
-    install:
-      - |
-        curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh | bash
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [optional]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v slb"
+    verified_installer:
+      tool: slb
+      runner: bash
+    install: []
     verify:
       - slb --help
 
@@ -294,14 +629,30 @@ modules:
   # ============================================================
   - id: acfs.onboard
     description: Onboarding TUI tutorial
-    install:
+    category: acfs
+    phase: 10
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    generated: false
+    tags: [orchestration]
+    notes:
       - "Install onboard script to ~/.local/bin/onboard"
+    install: []
     verify:
       - onboard --help || command -v onboard
 
   - id: acfs.doctor
     description: ACFS doctor command for health checks
-    install:
+    category: acfs
+    phase: 10
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    generated: false
+    tags: [orchestration]
+    notes:
       - "Install acfs script to ~/.local/bin/acfs"
+    install: []
     verify:
       - acfs doctor --help || command -v acfs
