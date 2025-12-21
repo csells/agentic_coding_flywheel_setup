@@ -183,6 +183,198 @@ Alignment with `scripts/lib/tools.sh`:
 
 All other tools are RECOMMENDED (can skip on failure).
 
+---
+
+## Selection Contract (Phase 0 Spec)
+
+This section defines the exact semantics for module filtering, dependency resolution, and plan computation.
+
+### CLI Input Flags
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `--only <ids>` | Filter | Install ONLY these modules (+ deps unless `--no-deps`) |
+| `--only-phase <nums>` | Filter | Install ONLY modules in these phases (+ deps) |
+| `--skip <ids>` | Filter | Skip these modules (fails if required dep) |
+| `--skip-tag <tag>` | Filter | Skip all modules with this tag |
+| `--no-deps` | Modifier | Disable automatic dependency expansion (expert-only) |
+| `--print-plan` | Introspection | Print execution plan and exit |
+| `--list-modules` | Introspection | List all modules with metadata and exit |
+
+**Legacy flags (mapped internally):**
+- `--skip-postgres` → `--skip db.postgres18`
+- `--skip-vault` → `--skip tools.vault`
+- `--skip-cloud` → `--skip cloud.wrangler,cloud.supabase,cloud.vercel`
+
+### Selection Algorithm
+
+```
+1. INITIALIZE starting_set:
+   - If --only provided: starting_set = {explicit module IDs}
+   - If --only-phase provided: starting_set = {modules in those phases}
+   - Else: starting_set = {modules where enabled_by_default=true}
+
+2. EXPAND dependencies (unless --no-deps):
+   - For each module in starting_set:
+     - Add all transitive dependencies (from ACFS_MODULE_DEPS)
+     - Dependencies are added even if enabled_by_default=false
+
+3. APPLY skips:
+   - For each module in --skip:
+     - If module is a required dependency of any remaining module:
+       - FAIL EARLY: "Cannot skip X: required by Y"
+     - Else: Remove from set
+
+4. VALIDATE:
+   - If any module ID in --only/--skip is unknown: FAIL EARLY
+   - If any phase in --only-phase is invalid (not 1-10): FAIL EARLY
+
+5. OUTPUT:
+   - ACFS_EFFECTIVE_RUN[module_id]=1  (hash for O(1) membership test)
+   - ACFS_EFFECTIVE_PLAN=(...)        (ordered list, filtered from ACFS_MODULES_IN_ORDER)
+```
+
+### Output Structures
+
+```bash
+# Populated by acfs_resolve_selection() after sourcing manifest_index.sh
+
+# Fast membership test (assoc array)
+declare -A ACFS_EFFECTIVE_RUN=(
+    [base.system]=1
+    [base.filesystem]=1
+    [lang.bun]=1
+    # ...
+)
+
+# Ordered execution plan (array, subset of ACFS_MODULES_IN_ORDER)
+ACFS_EFFECTIVE_PLAN=(
+    base.system
+    base.filesystem
+    shell.zsh
+    lang.bun
+    # ...
+)
+
+# Optional: diagnostic info for --print-plan
+declare -A ACFS_PLAN_REASON=(
+    [base.system]="default"
+    [lang.bun]="only"
+    [lang.rust]="dep:lang.bun"
+    # ...
+)
+```
+
+### Golden Path Examples
+
+#### 1. Default Install (No Flags)
+```bash
+./install.sh --yes --mode vibe
+```
+- Selection: All modules with `enabled_by_default: true`
+- Result: Full stack (base, shell, cli, lang, agents, stack, acfs)
+- Skipped: `db.postgres18`, `tools.vault`, `cloud.*` (opt-in)
+
+#### 2. Install Single Module with Dependencies
+```bash
+./install.sh --only lang.bun
+```
+- Starting set: `{lang.bun}`
+- Dependency expansion: Adds `base.system` (implicit dep for all)
+- Result: `base.system → lang.bun`
+
+#### 3. Install Module WITHOUT Dependencies (Expert)
+```bash
+./install.sh --only lang.bun --no-deps
+```
+- **WARNING:** "Running without dependency expansion. Module may fail if prerequisites missing."
+- Starting set: `{lang.bun}` (no expansion)
+- Result: Only `lang.bun` (may fail if `curl` not present)
+
+#### 4. Skip a Module That's a Dependency (FAIL)
+```bash
+./install.sh --only lang.bun --skip base.system
+```
+- **ERROR:** "Cannot skip base.system: required by lang.bun"
+- Exit code: 1 (installation aborts before any work)
+
+#### 5. Install Only Cloud Tools (Opt-in)
+```bash
+./install.sh --only cloud.wrangler,cloud.supabase,cloud.vercel
+```
+- Starting set: `{cloud.wrangler, cloud.supabase, cloud.vercel}`
+- Dependency expansion: Adds `base.system`, `lang.bun` (required by Bun CLIs)
+- Result: `base.system → lang.bun → cloud.wrangler → cloud.supabase → cloud.vercel`
+
+#### 6. Legacy Flag Equivalence
+```bash
+# Old way
+./install.sh --skip-postgres --skip-cloud
+
+# Equivalent new way
+./install.sh --skip db.postgres18 --skip-tag cloud
+```
+- Both produce identical `ACFS_EFFECTIVE_PLAN`
+
+#### 7. Print Plan Without Running
+```bash
+./install.sh --print-plan --only lang.bun
+```
+- Output (human-readable, stable ordering):
+```
+ACFS Installation Plan
+======================
+Phase 1: Base
+  ✓ base.system (dependency of lang.bun)
+
+Phase 6: Languages
+  ✓ lang.bun (explicitly requested)
+
+Total: 2 modules
+```
+- **No side effects:** Does not modify state.json, does not require preflight
+
+### Error Messages
+
+| Condition | Message | Exit Code |
+|-----------|---------|-----------|
+| Unknown module in `--only` | `Unknown module: foo.bar (not in manifest)` | 1 |
+| Unknown module in `--skip` | `Unknown module: foo.bar (not in manifest)` | 1 |
+| Invalid phase | `Invalid phase: 15 (must be 1-10)` | 1 |
+| Skip required dep | `Cannot skip base.system: required by lang.bun, agents.claude` | 1 |
+| `--no-deps` warning | `WARNING: Running without dependency expansion. Modules may fail if prerequisites are missing.` | (continues) |
+
+### Interaction with State/Resume
+
+Selection computes the **full effective plan** regardless of resume state:
+- Resume logic (from `state.json`) determines the **starting point** within that plan
+- If flags change what would run, `--print-plan` shows the new plan
+- Selection does NOT modify `state.json`
+
+Example:
+```bash
+# First run: interrupted after phase 4
+./install.sh --mode vibe
+# ^C
+
+# Resume: same plan, starts from phase 5
+./install.sh --resume
+
+# Changed flags: different plan, starts from beginning
+./install.sh --only lang.bun
+# Warns: "Previous state.json exists but --only changes the plan. Starting fresh."
+```
+
+### Implementation Location
+
+| Component | Location | Responsibility |
+|-----------|----------|----------------|
+| `acfs_resolve_selection()` | `scripts/lib/install_helpers.sh` | Algorithm implementation |
+| `should_run_module()` | `scripts/lib/install_helpers.sh` | O(1) membership test |
+| `ACFS_MODULE_DEPS` | `scripts/generated/manifest_index.sh` | Dependency graph data |
+| `ACFS_MODULES_IN_ORDER` | `scripts/generated/manifest_index.sh` | Topological order data |
+| `parse_args()` | `install.sh` | CLI parsing + legacy flag mapping |
+
 ## How This Plan Interacts With Other ACFS Work
 
 This plan is intentionally focused on **eliminating “two universes” drift** (manifest vs install.sh), but it must coexist cleanly with the project’s other reliability initiatives.
