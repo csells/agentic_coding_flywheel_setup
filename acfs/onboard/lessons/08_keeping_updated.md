@@ -170,15 +170,17 @@ Recommendations:
 
 ---
 
-## Next
+## Congratulations!
 
-You've learned the basics! Now put it all together:
+You've completed the ACFS onboarding.
 
-```bash
-onboard 7
-```
+You now have:
+- A fully configured development VPS
+- Three powerful coding agents
+- A complete coordination toolstack
+- The knowledge to use it all
 
-Or return to the flywheel workflow for the complete picture.
+**Go build something amazing!**
 
 ---
 

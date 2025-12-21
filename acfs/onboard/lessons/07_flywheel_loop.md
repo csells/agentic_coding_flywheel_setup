@@ -195,17 +195,13 @@ What kind of project should we create?"
 
 ---
 
-## Congratulations!
+## Next
 
-You've completed the ACFS onboarding.
+One final lesson: keeping everything updated.
 
-You now have:
-- A fully configured development VPS
-- Three powerful coding agents
-- A complete coordination toolstack
-- The knowledge to use it all
-
-**Go build something amazing!**
+```bash
+onboard 9
+```
 
 ---
 
