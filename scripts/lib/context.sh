@@ -40,6 +40,24 @@ export TRY_STEP_VERBOSE="${TRY_STEP_VERBOSE:-0}"  # Set to 1 for debug output
 export MAX_ERROR_LENGTH=500       # Max chars to store in LAST_ERROR
 
 # ============================================================
+# JSON Escaping Helper
+# ============================================================
+
+# Escape a string for safe inclusion in JSON
+# Handles: backslash, quotes, newlines, tabs, carriage returns
+# Usage: escaped=$(_json_escape "$string")
+_json_escape() {
+    local s="$1"
+    # Order matters: escape backslashes first
+    s="${s//\\/\\\\}"      # \ -> \\
+    s="${s//\"/\\\"}"      # " -> \"
+    s="${s//$'\n'/\\n}"    # newline -> \n
+    s="${s//$'\r'/\\r}"    # carriage return -> \r
+    s="${s//$'\t'/\\t}"    # tab -> \t
+    printf '%s' "$s"
+}
+
+# ============================================================
 # Phase Management Functions
 # ============================================================
 
@@ -64,12 +82,18 @@ set_phase() {
 # Get current phase info as JSON (for state.json)
 # Usage: get_phase_json
 get_phase_json() {
+    # Escape JSON special characters in strings
+    local escaped_phase escaped_phase_name escaped_step
+    escaped_phase=$(_json_escape "$CURRENT_PHASE")
+    escaped_phase_name=$(_json_escape "$CURRENT_PHASE_NAME")
+    escaped_step=$(_json_escape "$CURRENT_STEP")
+
     cat <<EOF
 {
-  "phase_id": "$CURRENT_PHASE",
-  "phase_name": "$CURRENT_PHASE_NAME",
+  "phase_id": "$escaped_phase",
+  "phase_name": "$escaped_phase_name",
   "phase_number": $CURRENT_PHASE_NUMBER,
-  "current_step": "$CURRENT_STEP",
+  "current_step": "$escaped_step",
   "step_number": $CURRENT_STEP_NUMBER
 }
 EOF
@@ -214,17 +238,20 @@ has_error() {
 # Get error info as JSON (for state.json or reporting)
 # Usage: get_error_json
 get_error_json() {
-    # Escape JSON special characters in error text
-    local escaped_error
-    escaped_error=$(echo "$LAST_ERROR" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\n/\\n/g')
+    # Escape JSON special characters using helper function
+    local escaped_error escaped_phase escaped_step escaped_timestamp
+    escaped_error=$(_json_escape "$LAST_ERROR")
+    escaped_phase=$(_json_escape "$LAST_ERROR_PHASE")
+    escaped_step=$(_json_escape "$LAST_ERROR_STEP")
+    escaped_timestamp=$(_json_escape "$LAST_ERROR_TIMESTAMP")
 
     cat <<EOF
 {
   "code": $LAST_ERROR_CODE,
   "message": "$escaped_error",
-  "phase": "$LAST_ERROR_PHASE",
-  "step": "$LAST_ERROR_STEP",
-  "timestamp": "$LAST_ERROR_TIMESTAMP"
+  "phase": "$escaped_phase",
+  "step": "$escaped_step",
+  "timestamp": "$escaped_timestamp"
 }
 EOF
 }

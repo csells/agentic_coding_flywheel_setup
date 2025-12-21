@@ -527,11 +527,12 @@ deep_check_agent_auth() {
 # Deep check: Database connectivity
 deep_check_database() {
     # PostgreSQL connection check
+    # Use -w to avoid password prompts (would hang), and timeout to prevent blocking
     if command -v psql &>/dev/null; then
-        # Try to connect to local postgres
-        if psql -h localhost -U postgres -c '\q' &>/dev/null 2>&1; then
+        # Try to connect to local postgres (5 second timeout, no password prompt)
+        if timeout 5 psql -w -h localhost -U postgres -c '\q' &>/dev/null 2>&1; then
             check "deep.db.postgres_connect" "PostgreSQL connection" "pass" "localhost:5432"
-        elif psql -h /var/run/postgresql -U postgres -c '\q' &>/dev/null 2>&1; then
+        elif timeout 5 psql -w -h /var/run/postgresql -U postgres -c '\q' &>/dev/null 2>&1; then
             check "deep.db.postgres_connect" "PostgreSQL connection" "pass" "unix socket"
         else
             check "deep.db.postgres_connect" "PostgreSQL connection" "warn" "connection failed" "Check PostgreSQL is running: sudo systemctl status postgresql"
@@ -542,10 +543,11 @@ deep_check_database() {
 }
 
 # Deep check: Cloud CLI authentication
+# All checks use 10 second timeout to prevent hanging on network issues
 deep_check_cloud() {
     # Vault status check
     if command -v vault &>/dev/null; then
-        if vault status &>/dev/null 2>&1; then
+        if timeout 10 vault status &>/dev/null 2>&1; then
             check "deep.cloud.vault_status" "Vault status" "pass" "connected"
         else
             check "deep.cloud.vault_status" "Vault status" "warn" "not reachable" "vault status"
@@ -556,7 +558,7 @@ deep_check_cloud() {
 
     # GitHub CLI auth check
     if command -v gh &>/dev/null; then
-        if gh auth status &>/dev/null 2>&1; then
+        if timeout 10 gh auth status &>/dev/null 2>&1; then
             check "deep.cloud.gh_auth" "GitHub CLI auth" "pass" "authenticated"
         else
             check "deep.cloud.gh_auth" "GitHub CLI auth" "warn" "not authenticated" "gh auth login"
@@ -567,7 +569,7 @@ deep_check_cloud() {
 
     # Wrangler auth check (Cloudflare)
     if command -v wrangler &>/dev/null; then
-        if wrangler whoami &>/dev/null 2>&1; then
+        if timeout 10 wrangler whoami &>/dev/null 2>&1; then
             check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "pass" "authenticated"
         else
             check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "warn" "not authenticated" "wrangler login"
@@ -579,7 +581,7 @@ deep_check_cloud() {
     # Supabase auth check
     if command -v supabase &>/dev/null; then
         # Supabase doesn't have a simple auth check, just verify it runs
-        if supabase --version &>/dev/null 2>&1; then
+        if timeout 5 supabase --version &>/dev/null 2>&1; then
             check "deep.cloud.supabase" "Supabase CLI (binary OK)" "pass"
         else
             check "deep.cloud.supabase" "Supabase CLI" "warn" "binary error"
@@ -590,7 +592,7 @@ deep_check_cloud() {
 
     # Vercel auth check
     if command -v vercel &>/dev/null; then
-        if vercel whoami &>/dev/null 2>&1; then
+        if timeout 10 vercel whoami &>/dev/null 2>&1; then
             check "deep.cloud.vercel_auth" "Vercel auth" "pass" "authenticated"
         else
             check "deep.cloud.vercel_auth" "Vercel auth" "warn" "not authenticated" "vercel login"
