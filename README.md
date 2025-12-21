@@ -1709,6 +1709,869 @@ ACFS kicks off this flywheel by providing the **best possible starting environme
 
 ---
 
+## The Vibe Coding Manifesto
+
+"Vibe coding" isn't just a catchy name—it's a philosophy about how humans and AI should collaborate on software development.
+
+### What Is Vibe Coding?
+
+Vibe coding is the practice of **directing AI agents to write code while you focus on intent, architecture, and quality**. Instead of typing every line yourself, you:
+
+1. **Describe what you want** in natural language
+2. **Review and guide** the agent's output
+3. **Iterate rapidly** through multiple approaches
+4. **Ship faster** while maintaining quality
+
+The "vibe" comes from the flow state you enter when you're no longer fighting syntax, boilerplate, or implementation details—you're just vibing with your AI partner.
+
+### The Three Laws of Vibe Coding
+
+**1. Velocity Over Ceremony**
+
+Traditional development is ceremony-heavy: create branch, write tests first, implement, refactor, write docs, create PR, wait for review, merge, deploy. Each step has friction.
+
+Vibe coding inverts this: ship fast, iterate faster. The AI handles boilerplate while you focus on the 10% that requires human judgment.
+
+```
+Traditional: Think → Plan → Implement → Test → Document → Ship
+Vibe:        Describe → Generate → Verify → Ship → Iterate
+```
+
+**2. Throwaway Environments Enable Boldness**
+
+The magic of vibe coding happens on **ephemeral VPS instances**. When your environment is disposable:
+- You can experiment without fear
+- Catastrophic failures are just `rm -rf / && create new VPS`
+- Agents can have dangerous permissions (they can't break what's disposable)
+- You focus on output, not on protecting your setup
+
+This is why ACFS's "vibe mode" enables passwordless sudo and dangerous agent flags—on a $5/month throwaway VPS, there's nothing worth protecting.
+
+**3. Multi-Agent Is The Default**
+
+One agent is useful. Three agents working in parallel are transformative.
+
+Vibe coding assumes you'll run multiple agents simultaneously:
+- Claude for complex reasoning and architecture
+- Codex for rapid prototyping and refactoring
+- Gemini for documentation and research
+
+ACFS provides the coordination layer (Agent Mail, NTM, SLB) that makes this practical.
+
+### The Anti-Patterns
+
+Vibe coding is **NOT**:
+- Blindly accepting agent output without review
+- Abandoning tests and quality standards
+- Ignoring security on production systems
+- Treating agents as replacements for understanding
+
+The goal is **augmented human judgment**, not abdicated human judgment.
+
+### When NOT to Vibe Code
+
+- Production systems with real users
+- Security-critical infrastructure
+- Anything involving credentials or secrets
+- Long-running servers (use safe mode)
+- Shared team environments (use coordination tools)
+
+Vibe coding is for **greenfield development, prototyping, experimentation, and learning**. Use ACFS's safe mode for everything else.
+
+---
+
+## State Machine & Checkpoint System
+
+ACFS implements a robust **checkpoint-based state machine** that enables reliable resume-from-failure. This section explains how it works under the hood.
+
+### State File Format
+
+Progress is tracked in `~/.acfs/state.json`:
+
+```json
+{
+  "schema_version": 3,
+  "started_at": "2024-12-21T10:30:00Z",
+  "last_updated": "2024-12-21T10:45:23Z",
+  "mode": "vibe",
+  "completed_phases": ["user_setup", "filesystem", "shell_setup"],
+  "current_phase": "cli_tools",
+  "current_step": "Installing ripgrep",
+  "failed_phase": null,
+  "failed_step": null,
+  "failed_error": null,
+  "skipped_phases": [],
+  "phase_timings": {
+    "user_setup": 12,
+    "filesystem": 8,
+    "shell_setup": 145
+  }
+}
+```
+
+### Phase State Transitions
+
+Each phase goes through a defined state machine:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE STATE MACHINE                                                         │
+│                                                                              │
+│  ┌──────────┐     ┌──────────┐     ┌──────────┐                             │
+│  │ PENDING  │────▶│ RUNNING  │────▶│ COMPLETE │                             │
+│  └──────────┘     └────┬─────┘     └──────────┘                             │
+│       │                │                                                     │
+│       │                ▼                                                     │
+│       │          ┌──────────┐     ┌──────────┐                              │
+│       │          │  FAILED  │────▶│  RETRY   │──┐                           │
+│       │          └──────────┘     └──────────┘  │                           │
+│       │                                ▲        │                           │
+│       │                                └────────┘                           │
+│       │                                                                      │
+│       └──────────────────────▶┌──────────┐                                  │
+│          (--skip flag)        │ SKIPPED  │                                  │
+│                               └──────────┘                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Resume Logic
+
+When the installer runs, it follows this decision tree:
+
+```python
+def should_run_phase(phase_id):
+    state = load_state_file()
+
+    if phase_id in state.completed_phases:
+        return SKIP  # Already done
+
+    if phase_id in state.skipped_phases:
+        return SKIP  # User explicitly skipped
+
+    if state.failed_phase == phase_id:
+        if user_wants_retry():
+            return RUN  # Retry failed phase
+        else:
+            return ABORT  # Don't continue past failure
+
+    return RUN  # Normal execution
+```
+
+### Atomic State Updates
+
+State file updates are **atomic** to prevent corruption from interrupted writes:
+
+```bash
+# Write to temp file first
+echo "$new_state" > "$state_file.tmp.$$"
+
+# Atomic rename (POSIX guarantees this is atomic on same filesystem)
+mv "$state_file.tmp.$$" "$state_file"
+```
+
+This ensures the state file is never partially written, even if the process is killed mid-update.
+
+### Recovery from Common Failures
+
+| Failure Type | Detection | Recovery |
+|--------------|-----------|----------|
+| Network timeout | curl exit code 28 | Retry with exponential backoff |
+| APT lock held | `/var/lib/dpkg/lock` exists | Wait and retry up to 60s |
+| Disk full | df check before write | Abort with clear error |
+| Out of memory | OOM killer | Resume picks up from last phase |
+| SSH disconnect | N/A (session dies) | Resume on reconnect |
+| Ctrl+C | Trap handler | Clean exit, state preserved |
+
+### Phase Timings & Performance
+
+The state file tracks how long each phase takes. This enables:
+- Accurate progress estimation ("Phase 4/9, ~3 minutes remaining")
+- Performance regression detection across ACFS versions
+- Identifying slow phases that need optimization
+
+---
+
+## Error Handling & Recovery Patterns
+
+ACFS is designed to **fail gracefully and recover automatically**. This section documents the error handling patterns used throughout the codebase.
+
+### The Try-Step Pattern
+
+Every installation step is wrapped in a `try_step` function that captures errors without aborting:
+
+```bash
+try_step "Installing ripgrep" install_ripgrep
+```
+
+This pattern provides:
+- **Context tracking**: Errors include step name, not just exit code
+- **Graceful continuation**: Non-critical failures don't abort the whole install
+- **Structured reporting**: Failures are collected and reported at the end
+
+### Network Resilience
+
+Network operations implement **exponential backoff with jitter**:
+
+```bash
+retry_with_backoff() {
+    local max_attempts=5
+    local delay=1
+
+    for attempt in $(seq 1 $max_attempts); do
+        if "$@"; then
+            return 0
+        fi
+
+        # Exponential backoff: 1s, 2s, 4s, 8s, 16s
+        # With jitter: ±25% randomization
+        local jitter=$(( (RANDOM % 50 - 25) * delay / 100 ))
+        sleep $((delay + jitter))
+        delay=$((delay * 2))
+    done
+
+    return 1
+}
+```
+
+### APT Lock Handling
+
+The most common installation failure is APT lock contention (another process using apt):
+
+```bash
+wait_for_apt_lock() {
+    local max_wait=60
+    local waited=0
+
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+        if [[ $waited -ge $max_wait ]]; then
+            log_error "APT lock held for >60s, aborting"
+            return 1
+        fi
+        log_detail "Waiting for apt lock... (${waited}s)"
+        sleep 5
+        waited=$((waited + 5))
+    done
+
+    return 0
+}
+```
+
+### Graceful Degradation
+
+When a non-critical tool fails to install, ACFS continues with a warning:
+
+```
+Category: Critical    → Failure aborts installation
+          Standard    → Failure logged, installation continues
+          Optional    → Failure noted, no warning
+
+Examples:
+  Critical: bun, zsh, git (can't proceed without these)
+  Standard: ast-grep, lazygit (nice to have, not blocking)
+  Optional: atuin, zoxide (pure enhancements)
+```
+
+### The Error Report
+
+At the end of installation (or on abort), ACFS generates a structured error report:
+
+```
+═══════════════════════════════════════════════════════════════════════════════
+  INSTALLATION REPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+  Status: PARTIAL SUCCESS (8/9 phases completed)
+
+  ✓ Completed Phases:
+    • User Setup (12s)
+    • Filesystem (8s)
+    • Shell Setup (2m 25s)
+    • CLI Tools (4m 12s)
+    • Languages (3m 45s)
+    • Agents (1m 30s)
+    • Cloud (2m 10s)
+    • Stack (5m 20s)
+
+  ✗ Failed Phase: Finalize
+    Step: Configuring tmux
+    Error: tmux.conf syntax error on line 42
+
+  Suggested Fix:
+    Check ~/.acfs/tmux/tmux.conf for syntax errors
+    Then run: curl ... | bash -s -- --yes --mode vibe --resume
+
+═══════════════════════════════════════════════════════════════════════════════
+```
+
+---
+
+## Troubleshooting Guide
+
+This section covers common issues and their solutions. For quick debugging, start with `acfs doctor`.
+
+### Installation Fails Immediately
+
+**Symptom**: Installer exits within seconds of starting.
+
+**Common Causes & Solutions**:
+
+| Cause | Detection | Fix |
+|-------|-----------|-----|
+| Not running as root | "Permission denied" | `sudo bash` or use `sudo` in curl command |
+| Not Ubuntu | "Unsupported OS" | ACFS only supports Ubuntu 22.04+ |
+| No internet | "curl: (6) Could not resolve host" | Check DNS, try `ping google.com` |
+| Old bash | Syntax errors | Upgrade to bash 4+ |
+
+### APT Lock Errors
+
+**Symptom**: `E: Could not get lock /var/lib/dpkg/lock-frontend`
+
+**Solutions**:
+
+1. **Wait for unattended-upgrades** (most common on fresh VPS):
+   ```bash
+   # Check what's holding the lock
+   sudo lsof /var/lib/dpkg/lock-frontend
+
+   # Wait for it to finish (usually 2-3 minutes on fresh VPS)
+   # Then re-run installer
+   ```
+
+2. **Kill stuck process** (if waiting doesn't help):
+   ```bash
+   sudo killall apt apt-get dpkg
+   sudo dpkg --configure -a
+   sudo apt-get update
+   ```
+
+### Shell Not Changing to zsh
+
+**Symptom**: Still seeing bash prompt after install.
+
+**Solutions**:
+
+1. **Log out and back in** (the change happens at next login)
+
+2. **Manually set shell**:
+   ```bash
+   chsh -s $(which zsh)
+   # Then log out and back in
+   ```
+
+3. **Check shell was installed**:
+   ```bash
+   which zsh  # Should show /usr/bin/zsh
+   cat /etc/shells  # zsh should be listed
+   ```
+
+### Agent Authentication Issues
+
+**Claude Code**:
+```bash
+# Check auth status
+claude --version
+ls -la ~/.claude/  # or ~/.config/claude/
+
+# Re-authenticate
+claude  # Follow prompts
+```
+
+**Codex CLI**:
+```bash
+# Check auth status
+codex --version
+
+# Re-authenticate (uses ChatGPT account, not API key)
+codex login
+```
+
+**Gemini CLI**:
+```bash
+# Check auth status
+gemini --version
+
+# Re-authenticate
+gemini  # Follow Google login flow
+```
+
+### "Command Not Found" After Install
+
+**Symptom**: `claude: command not found` even though install succeeded.
+
+**Solutions**:
+
+1. **Reload shell config**:
+   ```bash
+   source ~/.zshrc
+   # Or start a new shell
+   exec zsh
+   ```
+
+2. **Check PATH**:
+   ```bash
+   echo $PATH | tr ':' '\n' | grep -E "(bun|local|cargo)"
+   # Should include: ~/.bun/bin, ~/.local/bin, ~/.cargo/bin
+   ```
+
+3. **Manual path fix**:
+   ```bash
+   export PATH="$HOME/.bun/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+   ```
+
+### Tmux Configuration Errors
+
+**Symptom**: Tmux won't start or shows config errors.
+
+**Solutions**:
+
+1. **Check syntax**:
+   ```bash
+   tmux source-file ~/.tmux.conf
+   # Will show line number of any errors
+   ```
+
+2. **Reset to ACFS defaults**:
+   ```bash
+   cp ~/.acfs/tmux/tmux.conf ~/.tmux.conf
+   ```
+
+3. **Version mismatch** (old tmux, new config):
+   ```bash
+   tmux -V  # Check version
+   # ACFS config requires tmux 3.0+
+   ```
+
+### Stack Tools Not Working
+
+**Symptom**: `ntm`, `slb`, etc. not found or erroring.
+
+**Solutions**:
+
+1. **Reinstall stack**:
+   ```bash
+   acfs update --stack --force
+   ```
+
+2. **Check cargo install worked**:
+   ```bash
+   ls ~/.cargo/bin/  # Should contain ntm, slb, etc.
+   ```
+
+3. **Rust not in path**:
+   ```bash
+   source ~/.cargo/env
+   ```
+
+### Complete Reset
+
+When all else fails, the nuclear option:
+
+```bash
+# Save any important files first!
+
+# Remove ACFS state
+rm -rf ~/.acfs
+
+# Remove installed configs
+rm -f ~/.zshrc ~/.tmux.conf ~/.p10k.zsh
+
+# Re-run installer fresh
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh?$(date +%s)" | bash -s -- --yes --mode vibe --force-reinstall
+```
+
+---
+
+## Security Threat Model
+
+ACFS takes security seriously while acknowledging the inherent risks of `curl | bash` installation. This section documents our threat model and mitigations.
+
+### What We Protect Against
+
+| Threat | Mitigation |
+|--------|------------|
+| **Man-in-the-middle (MITM)** | HTTPS enforcement for all downloads |
+| **Compromised upstream scripts** | SHA256 checksum verification |
+| **Malicious package injection** | Official package sources only (apt, cargo, bun) |
+| **Credential exposure** | No credentials stored in scripts or configs |
+| **Privilege escalation** | Minimal sudo usage, explicit permission grants |
+| **Persistent backdoors** | Ephemeral VPS model; start fresh if concerned |
+
+### What We Don't Protect Against
+
+| Threat | Why Not | Mitigation |
+|--------|---------|------------|
+| **Compromised GitHub** | Would require GitHub-level breach | Use release tags, verify commits |
+| **Compromised upstream maintainers** | Can't verify humans | Trust + checksum verification |
+| **Zero-day in installed tools** | Beyond our control | Keep tools updated, follow CVEs |
+| **Physical VPS access** | Provider responsibility | Choose reputable providers |
+| **Vibe mode abuse** | By design for throwaway VPS | Use safe mode on important systems |
+
+### The `curl | bash` Debate
+
+The `curl | bash` pattern is controversial. Critics argue:
+- You're executing arbitrary code from the internet
+- The download could be swapped mid-stream
+- You can't audit before executing
+
+Our response:
+1. **HTTPS** prevents mid-stream swapping
+2. **Checksums** verify content matches known-good versions
+3. **Ephemeral environments** limit blast radius
+4. **Open source** allows pre-audit of install.sh
+
+For maximum security, you can:
+```bash
+# Download first, audit, then execute
+curl -fsSL "https://..." -o install.sh
+less install.sh  # Review the code
+bash install.sh --yes --mode vibe
+```
+
+### Checksum Verification Deep Dive
+
+Every upstream installer we fetch is verified against known-good checksums:
+
+```yaml
+# checksums.yaml excerpt
+installers:
+  bun:
+    url: "https://bun.sh/install"
+    sha256: "a1b2c3d4e5f6..."
+    last_verified: "2024-12-15"
+    notes: "Official Bun installer"
+```
+
+The verification process:
+
+```
+1. Download script to memory (not disk)
+2. Calculate SHA256 of downloaded bytes
+3. Compare against stored checksum
+4. If match: execute
+5. If mismatch: abort with warning
+```
+
+A mismatch could mean:
+- Upstream released a new version (common, usually safe)
+- Upstream was compromised (rare, investigate before updating)
+
+Our update process:
+1. Monitor upstream releases
+2. Review changes in new installer versions
+3. Update checksums only after manual review
+4. Commit with descriptive message explaining what changed
+
+### Vibe Mode Security Implications
+
+Vibe mode (`--mode vibe`) enables:
+- Passwordless sudo for ubuntu user
+- `--dangerously-skip-permissions` for Claude
+- `--dangerously-bypass-approvals-and-sandbox` for Codex
+- `--yolo` for Gemini
+
+This is **intentionally insecure for velocity**. Use only on:
+- Throwaway VPS you don't care about
+- Non-production environments
+- Personal experimentation
+
+Never on:
+- Production servers
+- Shared team infrastructure
+- Systems with sensitive data
+- Long-running servers
+
+---
+
+## Comparison to Alternatives
+
+How does ACFS compare to other ways of setting up a development environment?
+
+### vs. Manual Setup
+
+| Aspect | Manual | ACFS |
+|--------|--------|------|
+| Time | 3-7 hours | 30 minutes |
+| Consistency | Varies | Identical every time |
+| Documentation | Your memory | This README |
+| Resume on failure | Start over | Automatic |
+| Updates | Manual each tool | `acfs update` |
+
+**When to use manual**: When you need to understand every detail, or have highly specific requirements.
+
+### vs. Dotfiles Repos
+
+| Aspect | Dotfiles | ACFS |
+|--------|----------|------|
+| Scope | Configs only | Full tool installation |
+| Portability | Mac/Linux | Ubuntu-focused |
+| Maintenance | DIY | Maintained project |
+| Agent focus | None | Core feature |
+
+**When to use dotfiles**: When you already have tools installed and just want configs.
+
+### vs. Nix/NixOS
+
+| Aspect | Nix | ACFS |
+|--------|-----|------|
+| Reproducibility | Perfect | Good |
+| Learning curve | Steep | Gentle |
+| Rollback | Native | Manual |
+| Complexity | High | Low |
+| Adoption | Growing | Easy |
+
+**When to use Nix**: When you need perfect reproducibility and are willing to invest in learning Nix.
+
+### vs. DevContainers
+
+| Aspect | DevContainers | ACFS |
+|--------|--------------|------|
+| Isolation | Container | Full VPS |
+| Resource overhead | Container runtime | None |
+| IDE integration | VSCode-centric | Terminal-native |
+| Agent experience | Limited | Native |
+
+**When to use DevContainers**: When you want isolated project environments within an existing machine.
+
+### vs. Ansible/Terraform
+
+| Aspect | Ansible/TF | ACFS |
+|--------|------------|------|
+| Scope | Infrastructure | Development env |
+| Complexity | High | Low |
+| Audience | DevOps | Developers |
+| Learning curve | Steep | Gentle |
+
+**When to use Ansible/Terraform**: When you're managing fleets of servers, not individual dev environments.
+
+### The ACFS Sweet Spot
+
+ACFS is optimal when you need:
+- **Fast setup** of a complete agentic coding environment
+- **Fresh Ubuntu VPS** as your target
+- **AI coding agents** as primary tools
+- **Throwaway/ephemeral** infrastructure mindset
+- **Minimal configuration** to get started
+
+---
+
+## The Dicklesworthstone Stack Philosophy
+
+The 8-tool stack included in ACFS isn't random—each tool addresses a specific problem discovered through extensive multi-agent development experience.
+
+### The Problems
+
+Running multiple AI coding agents simultaneously surfaces problems that don't exist with single-agent or no-agent development:
+
+1. **Session chaos**: Agents in random terminal windows, no organization
+2. **File conflicts**: Two agents editing the same file simultaneously
+3. **No communication**: Agents can't coordinate or share findings
+4. **Dangerous commands**: Agents running `rm -rf` without oversight
+5. **Lost context**: No memory of what agents learned previously
+6. **Auth switching**: Different projects need different credentials
+7. **History fragmentation**: Agent conversations scattered across systems
+8. **No task visibility**: Hard to see what agents are working on
+
+### The Solutions
+
+Each tool in the stack addresses specific problems:
+
+| # | Tool | Problem Solved | Philosophy |
+|---|------|----------------|------------|
+| 1 | **NTM** | Session chaos | Named sessions create order from chaos |
+| 2 | **Agent Mail** | No communication + file conflicts | Message-passing + file reservations |
+| 3 | **UBS** | Dangerous commands | Guardrails with intelligence |
+| 4 | **Beads Viewer** | No task visibility | Graph-based task dependencies |
+| 5 | **CASS** | History fragmentation | Unified search across all agents |
+| 6 | **CM** | Lost context | Procedural memory for agents |
+| 7 | **CAAM** | Auth switching | One command to switch identities |
+| 8 | **SLB** | Dangerous commands | Two-person rule for nuclear options |
+
+### The Synergy Effect
+
+These tools are designed to work together:
+
+```
+NTM spawns agents → Agents register with Agent Mail →
+Agent Mail reserves files → UBS validates operations →
+Beads tracks tasks → CASS searches history →
+CM provides memory → CAAM manages auth →
+SLB gates dangerous operations
+```
+
+No single tool is transformative alone. Together, they enable workflows that would otherwise be impossible:
+
+- **10 agents working in parallel** without stepping on each other
+- **Continuous operation** across SSH disconnects
+- **Audit trails** for every agent action
+- **Coordination** without manual intervention
+- **Safety** without sacrificing velocity
+
+### Design Principles of the Stack
+
+1. **Unix Philosophy**: Each tool does one thing well
+2. **Composition**: Tools designed to pipe into each other
+3. **Terminal-First**: TUI over GUI, speed over polish
+4. **Agent-Native**: Built for AI, not adapted for AI
+5. **Git-Friendly**: All state is auditable in version control
+
+---
+
+## Advanced Configuration
+
+ACFS supports various configuration mechanisms for advanced users.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ACFS_HOME` | `~/.acfs` | Configuration directory |
+| `ACFS_REF` | `main` | Git ref to install from |
+| `ACFS_LOG_DIR` | `/var/log/acfs` | Log directory |
+| `TARGET_USER` | `ubuntu` | User to configure |
+| `TARGET_HOME` | `/home/$TARGET_USER` | User home directory |
+
+**Example: Install from a specific branch**:
+```bash
+ACFS_REF=feature/new-tool curl -fsSL "..." | bash -s -- --yes --mode vibe
+```
+
+### Skip Flags
+
+Control what gets installed:
+
+```bash
+--skip-postgres    # Skip PostgreSQL 18
+--skip-vault       # Skip HashiCorp Vault
+--skip-cloud       # Skip Wrangler, Supabase, Vercel CLIs
+--skip-preflight   # Skip pre-flight validation
+```
+
+### Module Selection (Experimental)
+
+Select specific modules using manifest-driven flags:
+
+```bash
+--list-modules           # List available modules
+--print-plan             # Show execution plan
+--only <module>          # Only run specific module(s)
+--only-phase <phase>     # Only run modules in a phase
+--skip <module>          # Skip specific module(s)
+--no-deps                # Don't auto-include dependencies
+```
+
+**Example: Only install agents**:
+```bash
+curl -fsSL "..." | bash -s -- --yes --only-phase agents
+```
+
+### Custom Post-Install Hooks
+
+Add custom steps by placing scripts in `~/.acfs/hooks/`:
+
+```bash
+mkdir -p ~/.acfs/hooks
+cat > ~/.acfs/hooks/post-install.sh << 'EOF'
+#!/bin/bash
+# Custom post-install steps
+echo "Running custom configuration..."
+# Your commands here
+EOF
+chmod +x ~/.acfs/hooks/post-install.sh
+```
+
+ACFS will execute `post-install.sh` after the main installation completes.
+
+### Override Tool Versions
+
+To pin specific tool versions, set environment variables:
+
+```bash
+export BUN_VERSION="1.1.0"
+export UV_VERSION="0.5.0"
+# Then run installer
+```
+
+Note: Not all tools support version pinning. Check individual tool documentation.
+
+---
+
+## Future Roadmap
+
+ACFS is actively developed. Here's what's coming:
+
+### Near-Term (Q1 2025)
+
+- [ ] **Full manifest-driven execution**: install.sh consumes generated scripts
+- [ ] **Tailscale integration**: Zero-config VPN for secure remote access
+- [ ] **Accounts wizard step**: Guide users through service account setup
+- [ ] **Interactive module selection**: Choose what to install via TUI
+
+### Mid-Term (Q2 2025)
+
+- [ ] **ARM64 optimization**: Native Apple Silicon and ARM VPS support
+- [ ] **Offline mode**: Pre-downloaded package bundles
+- [ ] **Team mode**: Shared configurations across team members
+- [ ] **Plugin system**: Third-party tool integrations
+
+### Long-Term (2025+)
+
+- [ ] **ACFS Cloud**: Managed VPS provisioning + ACFS install in one click
+- [ ] **IDE integrations**: VSCode/Cursor extensions for remote ACFS management
+- [ ] **Agent marketplace**: Pre-configured agent personalities and workflows
+- [ ] **Enterprise features**: SSO, audit logging, compliance
+
+### Contributing Ideas
+
+Have ideas for ACFS? File an issue on GitHub or check the beads:
+
+```bash
+bd list --status=open  # See current work items
+bd ready               # See what's ready to work on
+```
+
+---
+
+## Performance Benchmarks
+
+Installation times vary by VPS provider and network conditions. Here are typical benchmarks:
+
+### Installation Time by Phase
+
+| Phase | Typical Duration | Notes |
+|-------|-----------------|-------|
+| User Setup | 10-15s | Fast, mostly checks |
+| Filesystem | 5-10s | Creating directories |
+| Shell Setup | 2-4 min | Oh-My-Zsh clone is slow |
+| CLI Tools | 3-5 min | Many apt packages |
+| Languages | 3-5 min | Rust compile takes longest |
+| Agents | 1-2 min | Fast npm installs |
+| Cloud | 1-2 min | Fast npm installs |
+| Stack | 4-6 min | Cargo installs |
+| Finalize | 30-60s | Config deployment |
+| **Total** | **15-25 min** | **Typical full install** |
+
+### Factors Affecting Speed
+
+| Factor | Impact | Optimization |
+|--------|--------|--------------|
+| Network latency | High | Choose VPS close to package mirrors |
+| Disk I/O | Medium | SSD/NVMe preferred |
+| CPU cores | Medium | More cores = faster compilation |
+| RAM | Low | 4GB is sufficient |
+| Provider | Variable | Hetzner typically fastest |
+
+### Resume Performance
+
+Resuming from checkpoint is fast because completed phases are skipped:
+
+```
+Full install:     20 minutes
+Resume from 50%:  10 minutes
+Resume from 90%:  2 minutes
+```
+
+---
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
