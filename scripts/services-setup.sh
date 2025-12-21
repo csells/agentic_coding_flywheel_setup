@@ -122,9 +122,8 @@ check_codex_status() {
         return
     fi
 
-    # Check for API key or config
-    if [[ -n "${OPENAI_API_KEY:-}" ]] || \
-       user_file_exists "$TARGET_HOME/.codex/auth.json" || \
+    # Check for OAuth auth.json or config files
+    if user_file_exists "$TARGET_HOME/.codex/auth.json" || \
        user_file_exists "$TARGET_HOME/.codex/config.json" || \
        user_file_exists "$TARGET_HOME/.config/codex/config.json"; then
         SERVICE_STATUS[codex]="configured"
@@ -360,50 +359,11 @@ setup_codex() {
         fi
     fi
 
-    gum_box "Codex CLI Setup" "Codex CLI can be configured two ways:
+    gum_box "Codex CLI Setup" "Codex CLI uses OAuth login with your ChatGPT account.
+We'll launch the login flow in your terminal/browser."
 
-1. OPENAI_API_KEY environment variable (for API access)
-2. OAuth login (for ChatGPT Plus/Pro subscribers)
-
-Which method would you like to use?"
-
-    local method
-    method=$(gum_choose "Select authentication method:" "OAuth Login (recommended)" "API Key")
-
-    if [[ "$method" == *"API Key"* ]]; then
-        echo ""
-        echo "Enter your OpenAI API key (starts with sk-):"
-        local api_key
-        if [[ "$HAS_GUM" == "true" ]]; then
-            api_key=$(gum input --password --placeholder "sk-...")
-        else
-            read -r -s api_key
-            echo ""  # Newline after hidden input
-        fi
-
-        if [[ -n "$api_key" ]]; then
-            # Add to shell config
-            local zshrc_local="$TARGET_HOME/.zshrc.local"
-            if grep -q "OPENAI_API_KEY" "$zshrc_local" 2>/dev/null || \
-               grep -q "OPENAI_API_KEY" "$TARGET_HOME/.zshrc" 2>/dev/null; then
-                gum_warn "OPENAI_API_KEY already exists in your shell config"
-                gum_detail "Edit ~/.zshrc.local manually to update it"
-            else
-                local api_key_escaped
-                api_key_escaped="$(printf '%q' "$api_key")"
-                {
-                    echo ""
-                    echo "# OpenAI API Key (added by ACFS services-setup)"
-                    echo "export OPENAI_API_KEY=$api_key_escaped"
-                } >> "$zshrc_local"
-                gum_success "API key added to ~/.zshrc.local"
-                gum_detail "Run 'source ~/.zshrc' or start a new shell to use it"
-            fi
-        fi
-    else
-        gum_detail "Launching Codex OAuth login..."
-        run_as_user "'$codex_bin'" || true
-    fi
+    gum_detail "Launching Codex OAuth login..."
+    run_as_user "'$codex_bin' login" || true
 
     check_codex_status
     if [[ "${SERVICE_STATUS[codex]}" == "configured" ]]; then

@@ -4,6 +4,9 @@
 
 ---
 
+> Prefer the web version? Visit https://agent-flywheel.com/learn for the Learning Hub,
+> or return to the setup wizard at https://agent-flywheel.com/wizard/os-selection.
+
 ## What You Now Have
 
 Congratulations! You've just set up a fully-armed **agentic engineering workstation**.
