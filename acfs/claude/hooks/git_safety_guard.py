@@ -46,7 +46,7 @@ SAFE_PATTERNS = [
 DESTRUCTIVE_PATTERNS = [
     # Git: Discard uncommitted changes
     (r"git checkout --\s", "Permanently discards uncommitted changes to tracked files"),
-    (r"git checkout\s+\.\s*$", "Discards all uncommitted changes in current directory"),
+    (r"git checkout\s+\.(?:\s*$|\s*[;&|])", "Discards all uncommitted changes in current directory"),
     (r"git restore\s+(?!--staged)", "Discards uncommitted changes (use --staged to only unstage)"),
 
     # Git: Hard reset

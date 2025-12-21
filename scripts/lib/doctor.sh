@@ -629,7 +629,7 @@ check_git_safety_guard() {
     if [[ ! -f "$hook_script" ]]; then
         check "agent.git_safety" "Git safety guard" "warn" \
             "hook not installed" \
-            "Copy from ~/.acfs/claude/hooks/git_safety_guard.py"
+            "mkdir -p ~/.claude/hooks && cp ~/.acfs/claude/hooks/git_safety_guard.py ~/.claude/hooks/ && chmod +x ~/.claude/hooks/git_safety_guard.py"
         return
     fi
 
