@@ -307,6 +307,45 @@ cd packages/manifest && bun run generate:dry
 cd packages/manifest && bun run generate
 ```
 
+### Checksums, Drift Checks, and Bootstrap Validation
+
+When adding or modifying modules—especially ones that run upstream installers—follow this checklist to avoid manifest/installer drift and broken curl|bash installs:
+
+1. **Checksums (verified installers only)**
+   - Add the installer URL + SHA256 in `checksums.yaml`.
+   - Use the security helper for updates:
+     ```bash
+     # Update all known checksums (review diff carefully)
+     ./scripts/lib/security.sh --update-checksums > checksums.yaml
+
+     # Verify all checksums against upstream
+     ./scripts/lib/security.sh --verify
+     ```
+
+2. **Drift Check (CI parity)**
+   ```bash
+   cd packages/manifest
+   bun run generate:diff   # ensures scripts/generated matches manifest
+   bun run generate        # writes scripts/generated/**
+   ```
+
+3. **Bootstrap Validation (curl|bash path)**
+   - Validate the archive bootstrap on the exact ref you intend to ship:
+     ```bash
+     # Run against a tag/sha or branch ref
+     ACFS_REF=<ref> curl -fsSL \
+       "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/<ref>/install.sh" \
+       | bash -s -- --print-plan
+     ```
+   - The bootstrap flow validates script syntax and ensures `scripts/generated/manifest_index.sh`
+     matches `acfs.manifest.yaml`. If this fails, the ref is inconsistent.
+
+4. **Smoke Sanity (optional but recommended)**
+   ```bash
+   bash scripts/lib/test_install_helpers.sh
+   bash scripts/lib/test_contract.sh
+   ```
+
 ### Modifying an Existing Module
 
 1. **Check Dependents**: Find modules that depend on this one
