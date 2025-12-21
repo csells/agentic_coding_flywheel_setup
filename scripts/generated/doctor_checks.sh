@@ -73,6 +73,8 @@ declare -a MANIFEST_CHECKS=(
     "cli.modern.9	Modern CLI tools referenced by the zshrc intent	command -v dig	required"
     "cli.modern.10	Modern CLI tools referenced by the zshrc intent	command -v nc	required"
     "cli.modern.11	Modern CLI tools referenced by the zshrc intent	command -v lsd || command -v eza	optional"
+    "network.tailscale.1	Zero-config mesh VPN for secure remote VPS access	tailscale version	required"
+    "network.tailscale.2	Zero-config mesh VPN for secure remote VPS access	systemctl is-enabled tailscaled	required"
     "lang.bun	Bun runtime for JS tooling and global CLIs	~/.bun/bin/bun --version	required"
     "lang.uv	uv Python tooling (fast venvs)	~/.local/bin/uv --version	required"
     "lang.rust	Rust + cargo	~/.cargo/bin/cargo --version	required"

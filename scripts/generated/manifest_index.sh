@@ -6,7 +6,7 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="e3c9295b5167967a903810f321fe4f9c829171854a1bdd42b53282dbdab7a5de"
+ACFS_MANIFEST_SHA256="10a025c3b8021fdc173a58975ad57a14a5cd323fdd777c10c1eddcffefdccaa5"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
@@ -14,6 +14,7 @@ ACFS_MODULES_IN_ORDER=(
   "base.filesystem"
   "shell.zsh"
   "cli.modern"
+  "network.tailscale"
   "lang.bun"
   "lang.uv"
   "lang.rust"
@@ -47,6 +48,7 @@ declare -gA ACFS_MODULE_PHASE=(
   ["base.filesystem"]="3"
   ["shell.zsh"]="4"
   ["cli.modern"]="5"
+  ["network.tailscale"]="5"
   ["lang.bun"]="6"
   ["lang.uv"]="6"
   ["lang.rust"]="6"
@@ -80,6 +82,7 @@ declare -gA ACFS_MODULE_DEPS=(
   ["base.filesystem"]="users.ubuntu"
   ["shell.zsh"]="base.system,base.filesystem"
   ["cli.modern"]="base.system"
+  ["network.tailscale"]="base.system"
   ["lang.bun"]="base.system"
   ["lang.uv"]="base.system"
   ["lang.rust"]="base.system"
@@ -113,6 +116,7 @@ declare -gA ACFS_MODULE_FUNC=(
   ["base.filesystem"]="install_base_filesystem"
   ["shell.zsh"]="install_shell_zsh"
   ["cli.modern"]="install_cli_modern"
+  ["network.tailscale"]="install_network_tailscale"
   ["lang.bun"]="install_lang_bun"
   ["lang.uv"]="install_lang_uv"
   ["lang.rust"]="install_lang_rust"
@@ -146,6 +150,7 @@ declare -gA ACFS_MODULE_CATEGORY=(
   ["base.filesystem"]="base"
   ["shell.zsh"]="shell"
   ["cli.modern"]="cli"
+  ["network.tailscale"]="network"
   ["lang.bun"]="lang"
   ["lang.uv"]="lang"
   ["lang.rust"]="lang"
@@ -179,6 +184,7 @@ declare -gA ACFS_MODULE_TAGS=(
   ["base.filesystem"]="critical"
   ["shell.zsh"]="critical,shell-ux"
   ["cli.modern"]="recommended,cli-modern"
+  ["network.tailscale"]="networking,vpn,security,google-sso"
   ["lang.bun"]="critical,runtime"
   ["lang.uv"]="critical,runtime"
   ["lang.rust"]="critical,runtime"
@@ -212,6 +218,7 @@ declare -gA ACFS_MODULE_DEFAULT=(
   ["base.filesystem"]="1"
   ["shell.zsh"]="1"
   ["cli.modern"]="1"
+  ["network.tailscale"]="1"
   ["lang.bun"]="1"
   ["lang.uv"]="1"
   ["lang.rust"]="1"

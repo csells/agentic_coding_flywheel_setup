@@ -54,6 +54,7 @@ source "$SCRIPT_DIR/install_base.sh"
 source "$SCRIPT_DIR/install_users.sh"
 source "$SCRIPT_DIR/install_shell.sh"
 source "$SCRIPT_DIR/install_cli.sh"
+source "$SCRIPT_DIR/install_network.sh"
 source "$SCRIPT_DIR/install_lang.sh"
 source "$SCRIPT_DIR/install_tools.sh"
 source "$SCRIPT_DIR/install_agents.sh"
@@ -70,6 +71,7 @@ install_all() {
     install_users
     install_shell
     install_cli
+    install_network
     install_lang
     install_tools
     install_agents

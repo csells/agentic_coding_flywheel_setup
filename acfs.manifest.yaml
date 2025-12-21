@@ -147,6 +147,45 @@ modules:
       - command -v nc
       - command -v lsd || command -v eza || true
 
+  # Network tools (still Phase 5)
+  - id: network.tailscale
+    description: Zero-config mesh VPN for secure remote VPS access
+    category: network
+    phase: 5
+    run_as: root
+    optional: false
+    enabled_by_default: true
+    tags: [networking, vpn, security, google-sso]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: current
+      command: "command -v tailscale"
+    install:
+      - |
+        # Add Tailscale apt repository
+        DISTRO_CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
+        # Map newer Ubuntu codenames to supported ones
+        case "$DISTRO_CODENAME" in
+          oracular|plucky) DISTRO_CODENAME="noble" ;;
+        esac
+        curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${DISTRO_CODENAME}.noarmor.gpg" \
+          | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+        echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu ${DISTRO_CODENAME} main" \
+          | tee /etc/apt/sources.list.d/tailscale.list
+        apt-get update
+        apt-get install -y tailscale
+        systemctl enable tailscaled
+    verify:
+      - tailscale version
+      - systemctl is-enabled tailscaled
+    docs_url: https://tailscale.com/kb/
+    post_install_message: |
+      Tailscale installed! To connect your VPS to your Tailscale network:
+        sudo tailscale up
+      Then log in with your Google account at the URL shown.
+      Once connected, you can access your VPS via its Tailscale IP or hostname.
+
   # ============================================================
   # PHASE 6: Language runtimes
   # ============================================================
