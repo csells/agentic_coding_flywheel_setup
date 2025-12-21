@@ -202,13 +202,70 @@ export default function SecurityDocsPage() {
       <Card className="space-y-4 p-6">
         <h2 className="text-lg font-semibold tracking-tight">Services without Google SSO</h2>
         <p className="text-sm text-muted-foreground">
-          Some services don’t support Google SSO (or you may choose not to use it). For those:
+          Some services don't support Google SSO (or you may choose not to use it). For those:
         </p>
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>Use a strong, unique password (password manager recommended).</li>
-          <li>Enable the service’s built-in 2FA.</li>
+          <li>Enable the service's built-in 2FA.</li>
           <li>Prefer authenticator apps or security keys over SMS.</li>
         </ul>
+      </Card>
+
+      {/* Password manager */}
+      <Card className="space-y-4 p-6">
+        <h2 className="text-lg font-semibold tracking-tight">Password manager recommendations</h2>
+        <p className="text-sm text-muted-foreground">
+          For services without Google SSO, use a password manager to generate and store strong, unique passwords.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <a
+            href="https://1password.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
+          >
+            <div className="font-medium text-foreground">1Password</div>
+            <p className="mt-1 text-xs text-muted-foreground">Best overall. Great UX, developer tools.</p>
+          </a>
+          <a
+            href="https://bitwarden.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-border/50 bg-card/50 p-4 transition-colors hover:border-primary/30"
+          >
+            <div className="font-medium text-foreground">Bitwarden</div>
+            <p className="mt-1 text-xs text-muted-foreground">Best free option. Open-source.</p>
+          </a>
+          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+            <div className="font-medium text-foreground">Apple Keychain</div>
+            <p className="mt-1 text-xs text-muted-foreground">Built into macOS/iOS. Good if already in Apple ecosystem.</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* What if compromised */}
+      <Card className="space-y-4 p-6">
+        <h2 className="text-lg font-semibold tracking-tight">What if Google gets compromised?</h2>
+        <p className="text-sm text-muted-foreground">
+          If you suspect unauthorized access, act immediately:
+        </p>
+        <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+          <li><span className="text-foreground/80">Change your Google password</span> from a trusted device.</li>
+          <li>
+            <span className="text-foreground/80">Revoke all app permissions</span> at{" "}
+            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              myaccount.google.com/permissions
+            </a>.
+          </li>
+          <li>
+            <span className="text-foreground/80">Check recent activity</span> at{" "}
+            <a href="https://myaccount.google.com/device-activity" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              myaccount.google.com/device-activity
+            </a>.
+          </li>
+          <li><span className="text-foreground/80">Re-authenticate all SSO services</span> (log out and back in).</li>
+          <li><span className="text-foreground/80">Enable Advanced Protection</span> to prevent future compromises.</li>
+        </ol>
       </Card>
 
       {/* Checklist */}
