@@ -240,7 +240,7 @@ export default function RentVPSPage() {
             <p className="text-[13px] leading-relaxed text-[oklch(0.65_0.02_260)] sm:text-sm">
               I&apos;m Jeffrey Emanuel, and I have <span className="font-medium text-[oklch(0.75_0.02_260)]">zero financial relationship</span> with
               Contabo, OVH, or any cloud provider. No affiliate links, no kickbacks, no sponsored content.
-              I recommend these because I use them myself—they offer beefy machines (32GB+ RAM) at
+              I recommend these because I use them myself—they offer beefy machines (48GB+ RAM) at
               a fraction of what AWS, GCP, or Azure charge. On those big providers, equivalent specs
               would cost <span className="font-medium text-[oklch(0.75_0.02_260)]">3-5× more</span>.
             </p>
@@ -289,7 +289,7 @@ export default function RentVPSPage() {
                 <strong>48GB RAM:</strong> Recommended! Run 10+ agents comfortably. (~$21/month)
               </li>
               <li>
-                <strong>64GB+ RAM:</strong> Power user mode. Run 20+ agents with headroom.
+                <strong>64GB+ RAM:</strong> Power user mode. Run 20+ agents with headroom. (~$37/month)
               </li>
             </ul>
           </GuideSection>
@@ -318,7 +318,7 @@ export default function RentVPSPage() {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <p className="font-medium text-foreground">Total for full setup:</p>
                 <p className="text-sm text-muted-foreground">
-                  VPS (~$21) + Claude Max x2 ($400) + GPT Pro ($200) = <strong>~$621/month</strong>
+                  VPS (~$37) + Claude Max x2 ($400) + GPT Pro ($200) = <strong>~$637/month</strong>
                   <br /><br />
                   <em>This sounds like a lot, but if it helps you build and ship faster,
                   it pays for itself quickly!</em>
@@ -366,7 +366,7 @@ export default function RentVPSPage() {
               <GuideStep number={3} title="Configure your VPS">
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   <li><strong>Region:</strong> Choose closest to you (US or EU)</li>
-                  <li><strong>Storage:</strong> Keep the default SSD option</li>
+                  <li><strong>Storage:</strong> Keep the default NVMe option</li>
                   <li><strong>Image:</strong> Select &quot;Ubuntu 24.04&quot; or newer</li>
                 </ul>
               </GuideStep>
@@ -397,7 +397,7 @@ export default function RentVPSPage() {
 
           <GuideSection title="Understanding the specs">
             <p className="mb-3">
-              When choosing a plan, you&apos;ll see terms like vCPU, RAM, and SSD.
+              When choosing a plan, you&apos;ll see terms like vCPU, RAM, and NVMe.
               Here&apos;s what they mean:
             </p>
             <ul className="space-y-2">

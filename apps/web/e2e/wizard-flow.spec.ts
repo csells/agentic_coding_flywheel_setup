@@ -132,11 +132,14 @@ test.describe("Wizard Flow", () => {
       await checkboxes.nth(i).click();
     }
 
-    // Enter IP address
-    await page.fill('input[placeholder*="192.168"]', "192.168.1.100");
+    // Enter IP address (use type() + blur() for cross-browser reliability)
+    const ipInput = page.locator('input[placeholder*="192.168"]');
+    await ipInput.clear();
+    await ipInput.type("192.168.1.100");
+    await ipInput.blur();
 
-    // Wait for validation
-    await expect(page.locator('text="Valid IP address"')).toBeVisible();
+    // Wait for validation to show success
+    await expect(page.locator('text="Valid IP address"')).toBeVisible({ timeout: 10000 });
 
     // Click continue
     await page.click('button:has-text("Continue to SSH")');
@@ -249,8 +252,14 @@ test.describe("State Persistence", () => {
       await checkboxes.nth(i).click();
     }
 
-    // Enter IP address
-    await page.fill('input[placeholder*="192.168"]', "10.0.0.50");
+    // Enter IP address (use type() + blur() for cross-browser reliability)
+    const ipInput = page.locator('input[placeholder*="192.168"]');
+    await ipInput.clear();
+    await ipInput.type("10.0.0.50");
+    await ipInput.blur();
+
+    // Wait for validation to show success before clicking continue
+    await expect(page.locator('text="Valid IP address"')).toBeVisible({ timeout: 10000 });
     await page.click('button:has-text("Continue to SSH")');
 
     // Check localStorage
