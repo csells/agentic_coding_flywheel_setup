@@ -668,6 +668,13 @@ alias cod='codex --dangerously-bypass-approvals-and-sandbox -m gpt-5.2-codex ...
 alias gmi='gemini --yolo --model gemini-3-pro-preview'
 ```
 
+**Installation & Updates:**
+Claude Code should be installed and updated using its native mechanisms:
+- **Install:** ACFS uses `bun install -g @anthropic-ai/claude-code` (official package)
+- **Update:** Use `claude update` (built-in) or run `acfs update --agents-only`
+
+This ensures proper authentication handling and avoids issues with alternative package manager builds. For Codex and Gemini, ACFS uses standard bun global package updates.
+
 ### Cloud & Database
 
 | Tool | Command | Description |
