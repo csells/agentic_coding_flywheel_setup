@@ -780,7 +780,12 @@ check_cloud() {
     # Tailscale VPN (bt5)
     if command -v tailscale &>/dev/null; then
         local ts_status
-        ts_status=$(tailscale status --json 2>/dev/null | jq -r '.BackendState // "unknown"' 2>/dev/null || echo "unknown")
+        if command -v jq &>/dev/null; then
+            ts_status=$(tailscale status --json 2>/dev/null | jq -r '.BackendState // "unknown"' 2>/dev/null || echo "unknown")
+        else
+            ts_status=$(tailscale status --json 2>/dev/null | sed -n 's/.*"BackendState"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            ts_status="${ts_status:-unknown}"
+        fi
         case "$ts_status" in
             "Running")
                 check "network.tailscale" "Tailscale" "pass" "connected"

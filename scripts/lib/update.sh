@@ -651,7 +651,7 @@ update_rust() {
     fi
 
     # Update rustup itself
-    run_cmd "rustup self-update" "$rustup_bin" self update 2>/dev/null || true
+    run_cmd "rustup self-update" "$rustup_bin" self update
 
     # Show version change without double-counting
     if capture_version_after "rust"; then

@@ -306,9 +306,18 @@ state_load() {
         return 1
     fi
 
-    # Basic JSON validation (has opening/closing braces)
-    if [[ ! "$content" =~ ^\{.*\}$ ]]; then
-        return 1
+    # Basic JSON validation
+    if command -v jq &>/dev/null; then
+        if ! printf '%s' "$content" | jq empty >/dev/null 2>&1; then
+            return 1
+        fi
+    else
+        # Trim leading/trailing whitespace and ensure it looks like JSON object
+        local trimmed
+        trimmed="$(printf '%s' "$content" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        if [[ -z "$trimmed" ]] || [[ "${trimmed:0:1}" != "{" ]] || [[ "${trimmed: -1}" != "}" ]]; then
+            return 1
+        fi
     fi
 
     echo "$content"

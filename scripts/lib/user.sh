@@ -189,7 +189,8 @@ normalize_user() {
 
     ensure_user
 
-    if [[ "${ACFS_MODE:-vibe}" == "vibe" ]]; then
+    local mode="${MODE:-${ACFS_MODE:-vibe}}"
+    if [[ "$mode" == "vibe" ]]; then
         enable_passwordless_sudo
     fi
 
