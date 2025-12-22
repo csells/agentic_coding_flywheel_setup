@@ -1101,6 +1101,8 @@ bootstrap_repo_archive() {
     tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/acfs-bootstrap-${ref_safe}.XXXXXX" 2>/dev/null)" || {
         log_fatal "Failed to create temp dir for extraction"
     }
+    # Make bootstrap dir world-readable so ubuntu user can access scripts
+    chmod 755 "$tmp_dir"
 
     log_step "Bootstrapping ACFS archive (${ref})"
     log_detail "Downloading ${archive_url}"
