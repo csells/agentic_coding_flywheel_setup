@@ -24,7 +24,9 @@ jobs:
         id: verify
         run: |
           chmod +x ./scripts/lib/security.sh
-          ./scripts/lib/security.sh --verify --json > current.json
+          # Note: --verify returns exit 1 when mismatches found, which is expected
+          # We capture the JSON output regardless of exit code
+          ./scripts/lib/security.sh --verify --json > current.json || true
 
           # Extract counts from JSON
           mismatches=$(jq '.mismatches | length' current.json)
