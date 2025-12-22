@@ -1854,6 +1854,13 @@ normalize_user() {
         try_step "Adding $TARGET_USER to sudo group" $SUDO usermod -aG sudo "$TARGET_USER" || return 1
     fi
 
+    # Ensure home directory has correct ownership
+    # CRITICAL: useradd -m does NOT change ownership of existing directories (common on VPS)
+    # Cloud images often pre-create /home/ubuntu owned by root:root
+    if [[ -d "$TARGET_HOME" ]]; then
+        try_step "Setting home directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" || return 1
+    fi
+
     # Set up passwordless sudo in vibe mode
     if [[ "$MODE" == "vibe" ]]; then
         log_detail "Enabling passwordless sudo for $TARGET_USER"

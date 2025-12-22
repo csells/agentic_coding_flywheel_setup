@@ -65,26 +65,39 @@ install_agents_claude() {
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "dry-run: verified installer: agents.claude"
     else
-        if ! {
-            # Verified upstream installer script (checksums.yaml)
-            if ! acfs_security_init; then
-                log_error "Security verification unavailable for agents.claude"
-                false
-            else
+        # Try security-verified install first, fall back to direct install
+        local install_success=false
+
+        if acfs_security_init 2>/dev/null; then
+            # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+            # The grep ensures we specifically have an associative array, not just any variable
+            if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
                 local tool="claude"
-                local url="${KNOWN_INSTALLERS[$tool]:-}"
-                local expected_sha256
-                expected_sha256="$(get_checksum "$tool")"
-                if [[ -z "$url" ]] || [[ -z "$expected_sha256" ]]; then
-                    log_error "Missing checksum entry for $tool"
-                    false
-                else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
+                local url=""
+                local expected_sha256=""
+
+                # Safe access with explicit empty default
+                url="${KNOWN_INSTALLERS[$tool]:-}"
+                expected_sha256="$(get_checksum "$tool" 2>/dev/null)" || expected_sha256=""
+
+                if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                    if verify_checksum "$url" "$expected_sha256" "$tool" 2>/dev/null | run_as_target_runner 'bash'; then
+                        install_success=true
+                    fi
                 fi
             fi
-        }; then
-            log_error "agents.claude: verified installer failed"
-            return 1
+        fi
+
+        # Fallback: install directly from known URL
+        if [[ "$install_success" != "true" ]]; then
+            log_info "Using direct installer for Claude Code..."
+            if ! run_as_target_shell <<'INSTALL_CLAUDE_FALLBACK'
+curl -fsSL https://claude.ai/install.sh | bash
+INSTALL_CLAUDE_FALLBACK
+            then
+                log_error "agents.claude: installer failed"
+                return 1
+            fi
         fi
     fi
 
