@@ -743,10 +743,9 @@ update_stack() {
     fi
 
     # MCP Agent Mail - Special handling for tmux (server blocks)
+    # Note: Version tracking not possible for async tmux updates
     if cmd_exists "am" || [[ -d "$HOME/mcp_agent_mail" ]]; then
         if cmd_exists tmux; then
-            capture_version_before "am"
-
             local tool="mcp_agent_mail"
             local url="${KNOWN_INSTALLERS[$tool]:-}"
             local expected_sha256
