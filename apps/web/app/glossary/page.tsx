@@ -229,7 +229,7 @@ export default function GlossaryPage() {
                 <button
                   type="button"
                   onClick={clearQuery}
-                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
