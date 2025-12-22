@@ -180,7 +180,7 @@ export default function RentVPSPage() {
           </div>
           <div>
             <h1 className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
-              Rent a <Jargon term="vps">VPS</Jargon> (~$26-56/month)
+              Rent a <Jargon term="vps">VPS</Jargon>
             </h1>
             <p className="text-sm text-muted-foreground">
               ~5 min
