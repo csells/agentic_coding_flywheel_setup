@@ -745,7 +745,7 @@ upgrade_release_lock() {
 upgrade_show_progress() {
     local current_hop="${1:-1}"
     local total_hops="${2:-1}"
-    local minutes_per_hop=45
+    local minutes_per_hop=15
 
     local remaining_hops=$((total_hops - current_hop + 1))
     local remaining_minutes=$((remaining_hops * minutes_per_hop))
@@ -1094,7 +1094,7 @@ ubuntu_show_upgrade_warning() {
     path=$(ubuntu_calculate_upgrade_path)
     local hops
     hops=$(echo "$path" | wc -l | tr -d ' ')
-    local estimated_time=$((hops * 45))
+    local estimated_time=$((hops * 15))
 
     cat << EOF
 

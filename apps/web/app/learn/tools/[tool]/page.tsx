@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { type ReactNode } from "react";
 
 // Force dynamic rendering to work around Next.js 16.1.0 Turbopack static generation bug
-// See: https://github.com/vercel/next.js/issues/
+// Related: workUnitAsyncStorage issues in Turbopack with generateStaticParams
 export const dynamic = "force-dynamic";
 import {
   ArrowLeft,
