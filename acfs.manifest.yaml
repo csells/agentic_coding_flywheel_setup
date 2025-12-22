@@ -355,7 +355,9 @@ modules:
       - base.system
     installed_check:
       run_as: target_user
-      command: "test -d ~/.nvm && command -v node"
+      # Check nvm exists AND at least one node version is installed
+      # Can't use 'command -v node' because nvm.sh isn't sourced in this context
+      command: "test -d ~/.nvm && ls ~/.nvm/versions/node/ 2>/dev/null | grep -q ."
     verified_installer:
       tool: nvm
       runner: bash
