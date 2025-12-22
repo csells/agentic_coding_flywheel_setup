@@ -2614,8 +2614,8 @@ Installation times vary by VPS provider and network conditions. Here are typical
 | Shell Setup | 2-4 min | Oh-My-Zsh clone is slow |
 | CLI Tools | 3-5 min | Many apt packages |
 | Languages | 3-5 min | Rust compile takes longest |
-| Agents | 1-2 min | Fast npm installs |
-| Cloud | 1-2 min | Fast npm installs |
+| Agents | 1-2 min | Fast bun installs |
+| Cloud | 1-2 min | Fast bun installs |
 | Stack | 4-6 min | Cargo installs |
 | Finalize | 30-60s | Config deployment |
 | **Total** | **15-25 min** | **Typical full install** |
