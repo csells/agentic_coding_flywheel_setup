@@ -10,10 +10,8 @@ import {
   Shield,
   Bot,
   Cloud,
-  Wrench,
   Sparkles,
   Terminal,
-  Zap,
   ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,62 +31,45 @@ import {
 import { Jargon } from "@/components/jargon";
 import {
   SERVICES,
-  CATEGORY_NAMES,
-  PRIORITY_NAMES,
-  TIER_NAMES,
   getGoogleSsoServices,
-  groupByTier,
+  getServicesByTier,
   type Service,
-  type ServiceCategory,
   type ServiceTier,
 } from "@/lib/services";
 import { TrackedLink } from "@/components/tracked-link";
 
-// Category icons
-const CATEGORY_ICONS: Record<ServiceCategory, React.ReactNode> = {
-  access: <Shield className="h-5 w-5" />,
-  agent: <Bot className="h-5 w-5" />,
-  cloud: <Cloud className="h-5 w-5" />,
-  devtools: <Wrench className="h-5 w-5" />,
-};
-
-// Tier icons and colors
-const TIER_ICONS: Record<ServiceTier, React.ReactNode> = {
-  essential: <Zap className="h-5 w-5" />,
-  recommended: <Sparkles className="h-5 w-5" />,
-  optional: <Cloud className="h-5 w-5" />,
-};
-
-const TIER_DESCRIPTIONS: Record<ServiceTier, string> = {
-  essential: "You need these to start using the system",
-  recommended: "Add these after your first project",
-  optional: "Set these up when you need them",
-};
-
-// Priority badge colors - uses PRIORITY_NAMES from services.ts
-function getPriorityBadge(priority: Service["priority"]) {
-  const label = PRIORITY_NAMES[priority];
-  switch (priority) {
-    case "strongly-recommended":
-      return (
-        <span className="rounded-full bg-[oklch(0.72_0.19_145/0.15)] px-2 py-0.5 text-xs font-medium text-[oklch(0.72_0.19_145)]">
-          {label}
-        </span>
-      );
-    case "recommended":
-      return (
-        <span className="rounded-full bg-[oklch(0.75_0.18_195/0.15)] px-2 py-0.5 text-xs font-medium text-[oklch(0.75_0.18_195)]">
-          {label}
-        </span>
-      );
-    case "optional":
-      return (
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-          {label}
-        </span>
-      );
+const TIER_META: Record<
+  ServiceTier,
+  {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    accentClass: string;
+    defaultOpen: boolean;
   }
-}
+> = {
+  essential: {
+    title: "Essential (Do these now)",
+    description: "Two accounts you need to start your first project.",
+    icon: <Shield className="h-5 w-5" />,
+    accentClass: "bg-[oklch(0.72_0.19_145/0.2)] text-[oklch(0.72_0.19_145)]",
+    defaultOpen: true,
+  },
+  recommended: {
+    title: "Recommended (After your first project)",
+    description: "Add more AI agents when you want extra coverage.",
+    icon: <Bot className="h-5 w-5" />,
+    accentClass: "bg-[oklch(0.75_0.18_195/0.18)] text-[oklch(0.75_0.18_195)]",
+    defaultOpen: false,
+  },
+  optional: {
+    title: "Optional (When you need them)",
+    description: "Deployment, databases, and infrastructure extras.",
+    icon: <Cloud className="h-5 w-5" />,
+    accentClass: "bg-muted text-muted-foreground",
+    defaultOpen: false,
+  },
+};
 
 interface ServiceCardProps {
   service: Service;
@@ -97,6 +78,8 @@ interface ServiceCardProps {
 }
 
 function ServiceCard({ service, isChecked, onToggle }: ServiceCardProps) {
+  const checkboxId = `service-${service.id}`;
+
   return (
     <div
       className={`group rounded-xl border p-4 transition-all ${
@@ -106,11 +89,19 @@ function ServiceCard({ service, isChecked, onToggle }: ServiceCardProps) {
       }`}
     >
       <div className="flex items-start gap-3">
-        <Checkbox
-          checked={isChecked}
-          onCheckedChange={onToggle}
-          className="mt-1"
-        />
+        <div className="mt-1 flex flex-col items-center gap-1">
+          <Checkbox
+            id={checkboxId}
+            checked={isChecked}
+            onCheckedChange={onToggle}
+          />
+          <label
+            htmlFor={checkboxId}
+            className="text-[10px] text-muted-foreground"
+          >
+            Authenticated
+          </label>
+        </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-foreground">
@@ -119,7 +110,6 @@ function ServiceCard({ service, isChecked, onToggle }: ServiceCardProps) {
             <span className="text-xs text-muted-foreground">
               by {service.provider}
             </span>
-            {getPriorityBadge(service.priority)}
           </div>
           <p className="text-sm text-muted-foreground">
             {service.shortDescription}
@@ -351,21 +341,19 @@ export default function AccountsPage() {
       <SimplerGuide>
         <div className="space-y-6">
           <GuideExplain term="Why do I need all these accounts?">
-            These services work together to give you a powerful development
-            environment:
+            You don&apos;t need all of them right now! We&apos;ve organized them into three tiers:
             <br />
             <br />
-            <strong>Access:</strong> Tailscale lets you securely connect to your
-            VPS from anywhere without complex firewall setup.
+            <strong>Essential (do now):</strong> GitHub for code backup and Claude Code
+            for AI assistance. These two are all you need to start.
             <br />
             <br />
-            <strong>AI Agents:</strong> Claude Code, Codex, and Gemini are your
-            AI coding assistants. Having multiple gives you different
-            perspectives.
+            <strong>Recommended (after first project):</strong> Add Codex CLI and Gemini CLI
+            for more AI options with different perspectives.
             <br />
             <br />
-            <strong>Cloud Platforms:</strong> These handle deployment, databases,
-            and hosting so you can ship real products.
+            <strong>Optional (when you need them):</strong> Cloud platforms for deployment,
+            databases, and VPN access. Set these up when your project needs them.
           </GuideExplain>
 
           <GuideSection title="How to Sign Up Efficiently">

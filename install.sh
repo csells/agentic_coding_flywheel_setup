@@ -2960,6 +2960,11 @@ main() {
         installation_end_time=$(date +%s)
         total_seconds=$((installation_end_time - installation_start_time))
 
+        # Show completion message with progress display
+        if type -t show_completion &>/dev/null; then
+            show_completion 9 "$total_seconds"
+        fi
+
         # Report success with timing (mjt.5.8)
         if type -t report_success &>/dev/null; then
             report_success 9 "$total_seconds"
