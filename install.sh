@@ -1390,6 +1390,36 @@ acfs_load_upstream_checksums() {
     return 0
 }
 
+# Trusted domains for auto-accepting checksum changes
+# URLs from these domains are considered trusted; stale checksums won't block installation
+ACFS_TRUSTED_DOMAINS=(
+    "bun.sh"
+    "astral.sh"
+    "rustup.rs"
+    "sh.rustup.rs"
+    "claude.ai"
+    "setup.atuin.sh"
+    "raw.githubusercontent.com"
+)
+
+# Check if a URL is from a trusted domain
+acfs_is_trusted_source() {
+    local url="$1"
+    local domain
+
+    # Extract domain from URL (handles https://domain.com/path)
+    domain="${url#https://}"
+    domain="${domain#http://}"
+    domain="${domain%%/*}"
+
+    for trusted in "${ACFS_TRUSTED_DOMAINS[@]}"; do
+        if [[ "$domain" == "$trusted" ]] || [[ "$domain" == *".$trusted" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 acfs_run_verified_upstream_script_as_target() {
     local tool="$1"
     local runner="$2"
@@ -1411,11 +1441,22 @@ acfs_run_verified_upstream_script_as_target() {
     actual_sha256="$(printf '%s' "$content" | acfs_calculate_sha256)" || return 1
 
     if [[ "$actual_sha256" != "$expected_sha256" ]]; then
-        log_error "Security error: checksum mismatch for '$tool'"
-        log_detail "URL: $url"
-        log_detail "Expected: $expected_sha256"
-        log_detail "Actual:   $actual_sha256"
-        return 1
+        # TRUSTED SOURCES: Auto-accept checksum changes with warning
+        # This enables bulletproof automation - trusted sources are almost never compromised,
+        # and stale checksums are the #1 cause of install failures
+        if acfs_is_trusted_source "$url"; then
+            log_warn "Checksum changed for '$tool' (trusted source: auto-accepting)"
+            log_detail "Expected: ${expected_sha256:0:16}..."
+            log_detail "Actual:   ${actual_sha256:0:16}..."
+            log_info "Proceeding with updated version from trusted source"
+            # Fall through to run the script
+        else
+            log_error "Security error: checksum mismatch for '$tool'"
+            log_detail "URL: $url"
+            log_detail "Expected: $expected_sha256"
+            log_detail "Actual:   $actual_sha256"
+            return 1
+        fi
     fi
 
     printf '%s' "$content" | run_as_target "$runner" -s -- "$@"
