@@ -75,16 +75,13 @@ acfs_curl_with_retry_and_sentinel() {
             sleep "$delay"
         fi
 
-        local content status
+        local content status=0
+        # IMPORTANT: keep this `curl` call set -e-safe so transient failures
+        # don't abort the whole installer before our retry logic runs.
         content="$(
-            acfs_curl "$url" 2>/dev/null
-            status=$?
-            if (( status != 0 )); then
-                exit "$status"
-            fi
+            acfs_curl "$url" 2>/dev/null || exit $?
             printf '%s' "$sentinel"
-        )"
-        status=$?
+        )" || status=$?
 
         if (( status == 0 )) && [[ "$content" == *"$sentinel" ]]; then
             (( attempt > 0 )) && log_info "Succeeded on retry ${attempt} for fetching ${name}"
@@ -289,6 +286,14 @@ verify_checksum() {
         # This enables bulletproof automation - trusted sources are almost never compromised,
         # and stale checksums are the #1 cause of install failures
         if is_trusted_source "$url"; then
+            if [[ "${ACFS_STRICT_MODE:-false}" == "true" ]]; then
+                echo -e "${RED}Security Error:${NC} Checksum mismatch for $name (strict mode)" >&2
+                echo -e "  Expected: $expected_sha256" >&2
+                echo -e "  Actual:   $actual_sha256" >&2
+                echo -e "  URL: $url" >&2
+                return 1
+            fi
+
             echo -e "${YELLOW}NOTICE:${NC} Checksum changed for $name (trusted source: auto-accepting)" >&2
             echo -e "  Expected: ${expected_sha256:0:16}..." >&2
             echo -e "  Actual:   ${actual_sha256:0:16}..." >&2

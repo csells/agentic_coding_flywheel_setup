@@ -180,6 +180,11 @@ export UV_LINK_MODE=copy
 # Cargo env (if present)
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
+# nvm (Node Version Manager)
+export NVM_DIR="$HOME/.nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+[[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
+
 # Atuin init (after PATH)
 if command -v atuin &>/dev/null; then
   eval "$(atuin init zsh)"

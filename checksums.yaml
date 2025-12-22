@@ -60,7 +60,7 @@ installers:
 
   ubs:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh"
-    sha256: "f709cdf4793320c1e0a1711151f9116339956c26cd51964afb2ab0f1eac3738d"
+    sha256: "6d7e21d9f756dcef263091d6cf396b7ec3dec6db69a2a3a533c3073097673185"
 
   uv:
     url: "https://astral.sh/uv/install.sh"
