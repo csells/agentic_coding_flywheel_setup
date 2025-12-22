@@ -1108,22 +1108,12 @@ ubuntu_show_upgrade_warning() {
 ║  Estimated time:   ~${estimated_time} minutes
 ║                                                                  ║
 ╠══════════════════════════════════════════════════════════════════╣
-║  WARNING:                                                        ║
+║  NOTE:                                                           ║
 ║                                                                  ║
-║  • OS upgrades CANNOT be undone                                  ║
 ║  • System will reboot $hops time(s)
 ║  • SSH sessions will disconnect during reboots                   ║
 ║  • Reconnect after each reboot to monitor progress               ║
-║                                                                  ║
-╠══════════════════════════════════════════════════════════════════╣
-║  RECOMMENDED: Take a snapshot BEFORE proceeding                  ║
-║                                                                  ║
-║  Most cloud providers support snapshots:                         ║
-║  • Hetzner:  Cloud Console > Snapshots                           ║
-║  • OVH:      Control Panel > VPS > Snapshot                      ║
-║  • Contabo:  Customer Panel > Snapshots                          ║
-║  • AWS:      EC2 > Snapshots > Create Snapshot                   ║
-║  • DigitalOcean: Droplets > Snapshots                            ║
+║  • If anything fails, reinstall base image from your provider    ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 
