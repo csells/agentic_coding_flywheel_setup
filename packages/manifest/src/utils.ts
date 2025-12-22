@@ -167,18 +167,16 @@ export function sortModulesByInstallOrder(manifest: Manifest): Module[] {
       return;
     }
 
-    if (module) {
-      // Visit dependencies first
-      if (module.dependencies) {
-        for (const depId of module.dependencies) {
-          visit(depId);
-        }
+    // Visit dependencies first
+    if (module.dependencies) {
+      for (const depId of module.dependencies) {
+        visit(depId);
       }
-
-      visited.add(moduleId);
-      visiting.delete(moduleId);
-      sorted.push(module);
     }
+
+    visited.add(moduleId);
+    visiting.delete(moduleId);
+    sorted.push(module);
   }
 
   for (const module of manifest.modules) {
