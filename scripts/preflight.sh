@@ -254,11 +254,12 @@ check_network_installers() {
     fi
 
     # Test key installer URLs (warnings, not failures)
+    # Use -L to follow redirects, -I for HEAD request (faster)
     local urls=(
-        "https://bun.sh:Bun installer"
-        "https://astral.sh:UV/Python installer"
+        "https://bun.sh/install:Bun installer"
+        "https://astral.sh/uv/install.sh:UV/Python installer"
         "https://sh.rustup.rs:Rust installer"
-        "https://raw.githubusercontent.com:GitHub raw content"
+        "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/README.md:GitHub raw content"
     )
 
     local all_ok=true
@@ -268,7 +269,7 @@ check_network_installers() {
         local url="${entry%%:*}"
         local name="${entry##*:}"
 
-        if ! curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+        if ! curl -sfLI --max-time 5 "$url" > /dev/null 2>&1; then
             all_ok=false
             failed_urls+=("$name")
         fi

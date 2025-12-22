@@ -344,20 +344,26 @@ install_gum_early() {
 # ASCII Art Banner
 # ============================================================
 print_banner() {
-    local banner='
+    # Build version line with proper padding (63 chars inner width)
+    local version_text="Agentic Coding Flywheel Setup v${ACFS_VERSION}"
+    local padding=$(( (63 - ${#version_text}) / 2 ))
+    local version_line
+    version_line=$(printf "║%*s%s%*s║" "$padding" "" "$version_text" "$((63 - padding - ${#version_text}))" "")
+
+    local banner="
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║     █████╗  ██████╗███████╗███████╗                          ║
-║    ██╔══██╗██╔════╝██╔════╝██╔════╝                          ║
-║    ███████║██║     █████╗  ███████╗                          ║
-║    ██╔══██║██║     ██╔══╝  ╚════██║                          ║
-║    ██║  ██║╚██████╗██║     ███████║                          ║
-║    ╚═╝  ╚═╝ ╚═════╝╚═╝     ╚══════╝                          ║
+║     █████╗  ██████╗███████╗███████╗                           ║
+║    ██╔══██╗██╔════╝██╔════╝██╔════╝                           ║
+║    ███████║██║     █████╗  ███████╗                           ║
+║    ██╔══██║██║     ██╔══╝  ╚════██║                           ║
+║    ██║  ██║╚██████╗██║     ███████║                           ║
+║    ╚═╝  ╚═╝ ╚═════╝╚═╝     ╚══════╝                           ║
 ║                                                               ║
-║         Agentic Coding Flywheel Setup v'"$ACFS_VERSION"'              ║
+${version_line}
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
-'
+"
 
     if [[ "$HAS_GUM" == "true" ]]; then
         echo "$banner" | gum style --foreground "$ACFS_PRIMARY" --bold >&2
