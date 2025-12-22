@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# ============================================================
+# ACFS Global Wrapper
+# Installed to /usr/local/bin/acfs for system-wide access
+#
+# This wrapper ensures the acfs command works regardless of
+# which user invokes it (root or target user).
+# ============================================================
+
+set -euo pipefail
+
+# State file location (set during install)
+ACFS_STATE_FILE="${ACFS_STATE_FILE:-/var/lib/acfs/state.json}"
+
+# Detect target user from state file or default to ubuntu
+detect_target_user() {
+    local target_user=""
+
+    if [[ -f "$ACFS_STATE_FILE" ]]; then
+        # Try jq first (faster and more reliable)
+        if command -v jq &>/dev/null; then
+            target_user="$(jq -r '.target_user // empty' "$ACFS_STATE_FILE" 2>/dev/null || true)"
+        fi
+
+        # Fall back to sed if jq not available
+        if [[ -z "$target_user" ]]; then
+            target_user="$(sed -n 's/.*"target_user"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ACFS_STATE_FILE" | head -n 1)"
+        fi
+    fi
+
+    # Default to ubuntu if not found
+    echo "${target_user:-ubuntu}"
+}
+
+# Find acfs installation for a user
+find_acfs_bin() {
+    local user="$1"
+    local user_home
+
+    # Get user's home directory
+    user_home="$(getent passwd "$user" 2>/dev/null | cut -d: -f6)" || true
+    if [[ -z "$user_home" ]]; then
+        user_home="/home/$user"
+    fi
+
+    # Check standard locations
+    if [[ -x "$user_home/.local/bin/acfs" ]]; then
+        echo "$user_home/.local/bin/acfs"
+    elif [[ -x "$user_home/.acfs/bin/acfs" ]]; then
+        echo "$user_home/.acfs/bin/acfs"
+    else
+        return 1
+    fi
+}
+
+main() {
+    local target_user
+    local acfs_bin
+    local current_user
+
+    target_user="$(detect_target_user)"
+    current_user="$(whoami)"
+
+    # Find the acfs binary
+    if ! acfs_bin="$(find_acfs_bin "$target_user")"; then
+        echo "Error: ACFS not found for user '$target_user'" >&2
+        echo "Expected at: /home/$target_user/.local/bin/acfs" >&2
+        echo "" >&2
+        echo "Try running as the target user:" >&2
+        echo "  su - $target_user -c 'acfs $*'" >&2
+        exit 1
+    fi
+
+    # If we're already the target user, run directly
+    if [[ "$current_user" == "$target_user" ]]; then
+        exec "$acfs_bin" "$@"
+    fi
+
+    # If we're root, run as target user
+    if [[ "$EUID" -eq 0 ]]; then
+        exec sudo -u "$target_user" -i "$acfs_bin" "$@"
+    fi
+
+    # Otherwise, we need sudo to switch users
+    echo "Note: Running acfs as '$target_user' (ACFS owner)" >&2
+    exec sudo -u "$target_user" -i "$acfs_bin" "$@"
+}
+
+main "$@"
