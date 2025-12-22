@@ -559,22 +559,36 @@ test.describe("Complete Wizard Flow Integration", () => {
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.LOADING_SPINNER });
     await expect(page.locator("h1").first()).toContainText(/SSH/i);
     await page.click('button:has-text("continue")');
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/accounts"));
+
+    // Step 7: Set Up Accounts
+    await expect(page.locator("h1").first()).toContainText(/accounts/i);
+    await page.click('button:has-text("continue")');
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/preflight-check"));
+
+    // Step 8: Pre-Flight Check
+    await expect(page.locator("h1").first()).toContainText(/pre-?flight|check/i);
+    await page.click('button:has-text("continue")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/run-installer"));
 
-    // Step 7: Run Installer
+    // Step 9: Run Installer
     await expect(page.locator("h1").first()).toContainText(/installer/i);
     await page.click('button:has-text("finished")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/reconnect-ubuntu"));
 
-    // Step 8: Reconnect Ubuntu
+    // Step 10: Reconnect Ubuntu
     await page.click('button:has-text("connected as ubuntu")');
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/verify-key-connection"));
+
+    // Step 11: Verify Key Connection
+    await page.click('button:has-text("connected")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/status-check"));
 
-    // Step 9: Status Check
+    // Step 12: Status Check
     await page.click('button:has-text("Everything looks good")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/launch-onboarding"));
 
-    // Step 10: Launch Onboarding - Final step!
+    // Step 13: Launch Onboarding - Final step!
     await expect(page.locator("h1").first()).toContainText(/congratulations|set up/i);
   });
 });
