@@ -237,7 +237,11 @@ prompt_ssh_key() {
     fi
 
     # 6. Validate key format
-    if [[ ! "$pubkey" =~ ^ssh-(ed25519|rsa|ecdsa|dss)[[:space:]] ]]; then
+    # Supported formats:
+    #   ssh-ed25519, ssh-rsa, ssh-dss (legacy DSA)
+    #   ecdsa-sha2-nistp256, ecdsa-sha2-nistp384, ecdsa-sha2-nistp521
+    #   sk-ssh-ed25519@openssh.com, sk-ecdsa-sha2-nistp256@openssh.com (security keys)
+    if [[ ! "$pubkey" =~ ^(ssh-(ed25519|rsa|dss)|ecdsa-sha2-nistp(256|384|521)|sk-(ssh-ed25519|ecdsa-sha2-nistp256)@openssh\.com)[[:space:]] ]]; then
         log_error "Invalid SSH key format"
         log_detail "Expected format: ssh-ed25519 AAAA... or ssh-rsa AAAA..."
         log_detail "Make sure you copied the PUBLIC key (the .pub file)"
