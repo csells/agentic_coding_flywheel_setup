@@ -467,10 +467,12 @@ function generateVerifiedInstallerSnippet(module: Module): string[] {
     // When there are args, we also need -- to separate bash flags from script args
     const parts = ['run_as_target_runner', shellQuote(vi.runner)];
 
-    // Always add -s for bash/sh since we're piping script content to stdin
+    // Add -s for bash/sh since we're piping script content to stdin
     // Without -s, bash expects a filename argument, not stdin input
+    // But skip if args already include -s (manifest may specify it explicitly)
     const needsStdinFlag = ['bash', 'sh'].includes(vi.runner);
-    if (needsStdinFlag) {
+    const argsHaveStdinFlag = vi.args?.includes('-s') ?? false;
+    if (needsStdinFlag && !argsHaveStdinFlag) {
       parts.push("'-s'");
     }
 
