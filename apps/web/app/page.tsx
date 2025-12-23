@@ -586,7 +586,7 @@ function AboutSection() {
 
 // "Is This For You?" Decision Section
 const FOR_YOU_ITEMS = [
-  { text: "You want AI to write real, production code for you", detail: "Not just suggestions—full implementations" },
+  { text: "You want AI to write real, production code for you", detail: "Full implementations, not just suggestions" },
   { text: "You're willing to invest ~$500/month in AI subscriptions", detail: "Claude Max + GPT Pro + VPS hosting" },
   { text: "You can follow step-by-step instructions", detail: "No coding experience required, just patience" },
   { text: "You have 30+ minutes for initial setup", detail: "One-time investment, then you're ready" },
@@ -705,7 +705,7 @@ function WhatDoesThisCostSection() {
             <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
           </div>
           <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight sm:text-4xl">What Does This Cost?</h2>
-          <p className="mx-auto max-w-2xl text-muted-foreground">Complete transparency: here&apos;s what you&apos;ll actually pay each month. The tools themselves are free—you pay for the AI services.</p>
+          <p className="mx-auto max-w-2xl text-muted-foreground">Complete transparency: here&apos;s what you&apos;ll actually pay each month. The tools are free; you pay for the AI services.</p>
         </motion.div>
 
         <motion.div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-10" variants={staggerContainer} initial="hidden" animate={isInView ? "visible" : "hidden"}>
