@@ -53,6 +53,7 @@ create_archive() {
   cp -R "$REPO_ROOT/acfs" "$stage_dir/acfs-offline/acfs"
   cp "$REPO_ROOT/checksums.yaml" "$stage_dir/acfs-offline/checksums.yaml"
   cp "$REPO_ROOT/acfs.manifest.yaml" "$stage_dir/acfs-offline/acfs.manifest.yaml"
+  cp "$REPO_ROOT/VERSION" "$stage_dir/acfs-offline/VERSION"
 
   tar -czf "$archive_path" -C "$stage_dir" acfs-offline
 }
