@@ -307,32 +307,54 @@ get_error_context() {
 # Outputs: JSON object with error context
 get_error_context_json() {
     if ! command -v jq &>/dev/null; then
-        # Fallback without jq - basic JSON escaping
-        local escaped_error="${LAST_ERROR//\"/\\\"}"
-        local escaped_output="${LAST_ERROR_OUTPUT//\"/\\\"}"
-        escaped_output="${escaped_output//$'\n'/\\n}"
+        # Fallback without jq - emit valid JSON with proper escaping and nulls.
+        _acfs_json_escape() {
+            local s="$1"
+            s="${s//\\/\\\\}"      # \ -> \\
+            s="${s//\"/\\\"}"      # " -> \"
+            s="${s//$'\n'/\\n}"    # newline -> \n
+            s="${s//$'\r'/\\r}"    # carriage return -> \r
+            s="${s//$'\t'/\\t}"    # tab -> \t
+            printf '%s' "$s"
+        }
 
-        cat <<EOF
-{
-  "phase": "${CURRENT_PHASE:-null}",
-  "phase_name": "${CURRENT_PHASE_NAME:-null}",
-  "step": "${CURRENT_STEP:-null}",
-  "error": "${escaped_error:-null}",
-  "exit_code": ${LAST_ERROR_CODE:-0},
-  "time": "${LAST_ERROR_TIME:-null}",
-  "output": "${escaped_output:-null}"
-}
-EOF
-        return
+        _acfs_json_string_or_null() {
+            local s="${1:-}"
+            if [[ -z "$s" ]]; then
+                printf 'null'
+                return 0
+            fi
+            printf '"%s"' "$(_acfs_json_escape "$s")"
+        }
+
+        local exit_code=0
+        if [[ "${LAST_ERROR_CODE:-}" =~ ^[0-9]+$ ]]; then
+            exit_code="$LAST_ERROR_CODE"
+        fi
+
+        printf '{\n'
+        printf '  "phase": %s,\n' "$(_acfs_json_string_or_null "${CURRENT_PHASE:-}")"
+        printf '  "phase_name": %s,\n' "$(_acfs_json_string_or_null "${CURRENT_PHASE_NAME:-}")"
+        printf '  "step": %s,\n' "$(_acfs_json_string_or_null "${CURRENT_STEP:-}")"
+        printf '  "error": %s,\n' "$(_acfs_json_string_or_null "${LAST_ERROR:-}")"
+        printf '  "exit_code": %s,\n' "$exit_code"
+        printf '  "time": %s,\n' "$(_acfs_json_string_or_null "${LAST_ERROR_TIME:-}")"
+        printf '  "output": %s\n' "$(_acfs_json_string_or_null "${LAST_ERROR_OUTPUT:-}")"
+        printf '}\n'
+        return 0
     fi
 
     # Use jq for proper JSON encoding
+    local exit_code_num=0
+    if [[ "${LAST_ERROR_CODE:-}" =~ ^[0-9]+$ ]]; then
+        exit_code_num="$LAST_ERROR_CODE"
+    fi
     jq -n \
         --arg phase "${CURRENT_PHASE:-}" \
         --arg phase_name "${CURRENT_PHASE_NAME:-}" \
         --arg step "${CURRENT_STEP:-}" \
         --arg error "${LAST_ERROR:-}" \
-        --argjson exit_code "${LAST_ERROR_CODE:-0}" \
+        --argjson exit_code "$exit_code_num" \
         --arg time "${LAST_ERROR_TIME:-}" \
         --arg output "${LAST_ERROR_OUTPUT:-}" \
         '{
