@@ -518,15 +518,25 @@ install_stack_slb() {
     log_step "Installing stack.slb"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: install: go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest (target_user)"
+        log_info "dry-run: install: mkdir -p ~/go/bin (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_STACK_SLB'
-go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest
+mkdir -p ~/go/bin
+cd /tmp && rm -rf slb_build
+git clone --depth 1 https://github.com/Dicklesworthstone/simultaneous_launch_button.git slb_build
+cd slb_build && go build -o ~/go/bin/slb ./cmd/slb
+rm -rf /tmp/slb_build
+# Add ~/go/bin to PATH if not already present
+if ! grep -q 'export PATH=.*\$HOME/go/bin' ~/.zshrc 2>/dev/null; then
+  echo '' >> ~/.zshrc
+  echo '# Go binaries' >> ~/.zshrc
+  echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
+fi
 INSTALL_STACK_SLB
         then
-            log_warn "stack.slb: install command failed: go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest"
+            log_warn "stack.slb: install command failed: mkdir -p ~/go/bin"
             if type -t record_skipped_tool >/dev/null 2>&1; then
-              record_skipped_tool "stack.slb" "install command failed: go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest"
+              record_skipped_tool "stack.slb" "install command failed: mkdir -p ~/go/bin"
             elif type -t state_tool_skip >/dev/null 2>&1; then
               state_tool_skip "stack.slb"
             fi
@@ -536,15 +546,15 @@ INSTALL_STACK_SLB
 
     # Verify
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verify: slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1 (target_user)"
+        log_info "dry-run: verify: export PATH=\"\$HOME/go/bin:\$PATH\" && slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1 (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_STACK_SLB'
-slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1
+export PATH="$HOME/go/bin:$PATH" && slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1
 INSTALL_STACK_SLB
         then
-            log_warn "stack.slb: verify failed: slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1"
+            log_warn "stack.slb: verify failed: export PATH=\"\$HOME/go/bin:\$PATH\" && slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1"
             if type -t record_skipped_tool >/dev/null 2>&1; then
-              record_skipped_tool "stack.slb" "verify failed: slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1"
+              record_skipped_tool "stack.slb" "verify failed: export PATH=\"\$HOME/go/bin:\$PATH\" && slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1"
             elif type -t state_tool_skip >/dev/null 2>&1; then
               state_tool_skip "stack.slb"
             fi

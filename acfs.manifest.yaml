@@ -812,10 +812,25 @@ modules:
       run_as: target_user
       command: "command -v slb"
     install:
-      - go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest
+      # go install fails due to module path mismatch (go.mod says github.com/Dicklesworthstone/slb
+      # but repo is at github.com/Dicklesworthstone/simultaneous_launch_button)
+      # Build from source instead:
+      - |
+        mkdir -p ~/go/bin
+        cd /tmp && rm -rf slb_build
+        git clone --depth 1 https://github.com/Dicklesworthstone/simultaneous_launch_button.git slb_build
+        cd slb_build && go build -o ~/go/bin/slb ./cmd/slb
+        rm -rf /tmp/slb_build
+        # Add ~/go/bin to PATH if not already present
+        if ! grep -q 'export PATH=.*\$HOME/go/bin' ~/.zshrc 2>/dev/null; then
+          echo '' >> ~/.zshrc
+          echo '# Go binaries' >> ~/.zshrc
+          echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
+        fi
     verify:
       # Use 'slb' alone (shows quick reference) since --help may have exit code issues
-      - slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1
+      # Need to source updated PATH for verification
+      - export PATH="$HOME/go/bin:$PATH" && slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1
 
   # ============================================================
   # PHASE 10: Finalization (onboard, doctor, verification)
