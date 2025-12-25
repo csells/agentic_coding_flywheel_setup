@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # ============================================================
 # ACFS Installer - Ubuntu Upgrade Library
-# Automatically upgrades Ubuntu to target version (25.10)
+# Automatically upgrades Ubuntu to target version (default: 25.10)
 #
 # Requires: logging.sh, os_detect.sh to be sourced first
 # ============================================================
 
 # Target Ubuntu version for ACFS
-export UBUNTU_TARGET_VERSION="25.10"
-export UBUNTU_TARGET_VERSION_NUM=2510
+# Callers (install.sh / upgrade_resume.sh) may override by exporting
+# UBUNTU_TARGET_VERSION (and optionally UBUNTU_TARGET_VERSION_NUM) before sourcing.
+export UBUNTU_TARGET_VERSION="${UBUNTU_TARGET_VERSION:-25.10}"
+if [[ -z "${UBUNTU_TARGET_VERSION_NUM:-}" ]]; then
+    UBUNTU_TARGET_VERSION_NUM="$(printf "%d%02d" "${UBUNTU_TARGET_VERSION%%.*}" "${UBUNTU_TARGET_VERSION#*.}")"
+fi
+export UBUNTU_TARGET_VERSION_NUM
 
 # Minimum disk space required for upgrade (in MB)
 export UBUNTU_UPGRADE_MIN_DISK_MB=5000

@@ -26,11 +26,52 @@ set -euo pipefail
 ACFS_RESUME_DIR="/var/lib/acfs"
 ACFS_LIB_DIR="${ACFS_RESUME_DIR}/lib"
 ACFS_LOG="/var/log/acfs/upgrade_resume.log"
-UBUNTU_TARGET_VERSION="25.10"
+ACFS_STATE_FILE="${ACFS_RESUME_DIR}/state.json"
+# Default target for ACFS. May be overridden by the state file (target_version)
+# or by exporting UBUNTU_TARGET_VERSION before executing this script.
+UBUNTU_TARGET_VERSION="${UBUNTU_TARGET_VERSION:-25.10}"
 SERVICE_NAME="acfs-upgrade-resume"
 
 # Ensure log directory exists
 mkdir -p "$(dirname "$ACFS_LOG")"
+
+# Read target version from state file if available.
+read_target_version_from_state() {
+    local state_file="$1"
+    [[ -f "$state_file" ]] || return 1
+
+    local target=""
+    if command -v jq &>/dev/null; then
+        target=$(jq -r '.ubuntu_upgrade.target_version // empty' "$state_file" 2>/dev/null || true)
+    else
+        target=$(sed -n 's/.*"target_version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$state_file" | head -n 1)
+    fi
+
+    if [[ -n "$target" && "$target" != "null" ]]; then
+        printf '%s' "$target"
+        return 0
+    fi
+
+    return 1
+}
+
+compute_version_num() {
+    local version="$1"
+    local major="${version%%.*}"
+    local minor="${version#*.}"
+    printf "%d%02d" "$major" "$minor"
+}
+
+state_target_version="$(read_target_version_from_state "$ACFS_STATE_FILE" || true)"
+if [[ -n "${state_target_version:-}" ]]; then
+    UBUNTU_TARGET_VERSION="$state_target_version"
+fi
+export UBUNTU_TARGET_VERSION
+
+if [[ -z "${UBUNTU_TARGET_VERSION_NUM:-}" ]]; then
+    UBUNTU_TARGET_VERSION_NUM="$(compute_version_num "$UBUNTU_TARGET_VERSION")"
+fi
+export UBUNTU_TARGET_VERSION_NUM
 
 # Logging function for this script
 log() {
@@ -262,7 +303,7 @@ else
 fi
 
 # Set state file location for resume context
-export ACFS_STATE_FILE="${ACFS_RESUME_DIR}/state.json"
+export ACFS_STATE_FILE="${ACFS_STATE_FILE}"
 
 # ============================================================
 # Check current stage in state
@@ -273,6 +314,17 @@ if [[ -f "$ACFS_STATE_FILE" ]] && command -v jq &>/dev/null; then
     current_stage=$(jq -r '.ubuntu_upgrade.current_stage // "unknown"' "$ACFS_STATE_FILE" 2>/dev/null) || current_stage="unknown"
 fi
 log "Current stage from state file: $current_stage"
+
+# Pre-upgrade reboot: system rebooted to apply pending updates before the first do-release-upgrade.
+# At this point, we should disable the resume service and re-run install.sh (continue_install.sh)
+# which will proceed with the Ubuntu upgrade normally.
+if [[ "$current_stage" == "pre_upgrade_reboot" ]]; then
+    log "Detected pre-upgrade reboot marker. Continuing ACFS installer after reboot..."
+    cleanup_service
+    launch_continue_script || log "Note: Manual installation may be needed"
+    log "=== Upgrade Resume Complete (pre-upgrade reboot) ==="
+    exit 0
+fi
 
 # Ensure non-LTS upgrades are permitted
 ubuntu_enable_normal_releases || true
