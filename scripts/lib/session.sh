@@ -349,7 +349,7 @@ sanitize_session_export() {
     fi
 
     local jq_filter
-    read -r -d '' jq_filter <<'JQ_EOF'
+    read -r -d '' jq_filter <<'JQ_EOF' || true
 def sanitize_string:
     if type == "string" then
         gsub("sk-[a-zA-Z0-9_-]{20,}"; "[REDACTED]") |
