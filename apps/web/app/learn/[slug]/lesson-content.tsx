@@ -2,26 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
 import { markdownComponents } from "@/lib/markdown-components";
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock,
   GraduationCap,
   Home,
-  Keyboard,
-  Terminal,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   type Lesson,
   LESSONS,
@@ -46,7 +42,7 @@ interface Props {
   content: string;
 }
 
-// Hook for reading progress (scroll percentage)
+// Reading progress hook
 function useReadingProgress() {
   const [progress, setProgress] = useState(0);
 
@@ -59,25 +55,14 @@ function useReadingProgress() {
     };
 
     window.addEventListener("scroll", updateProgress, { passive: true });
-    updateProgress(); // Initial call
+    updateProgress();
     return () => window.removeEventListener("scroll", updateProgress);
   }, []);
 
   return progress;
 }
 
-// Reading progress bar component
-function ReadingProgressBar({ progress }: { progress: number }) {
-  return (
-    <div className="fixed left-0 right-0 top-0 z-50 h-1 bg-muted/30">
-      <div
-        className="h-full bg-gradient-to-r from-primary to-[oklch(0.75_0.18_195)] transition-all duration-150 ease-out"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
-  );
-}
-
+// Minimal, Stripe-inspired sidebar
 function LessonSidebar({
   currentLessonId,
   completedLessons,
@@ -88,88 +73,70 @@ function LessonSidebar({
   const progressPercent = Math.round((completedLessons.length / LESSONS.length) * 100);
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-border/50 bg-gradient-to-b from-sidebar/90 via-sidebar/70 to-sidebar/90 backdrop-blur-md lg:block">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border/40 bg-background lg:block">
       <div className="flex h-full flex-col">
-        {/* Header */}
-        <div className="border-b border-border/50 px-6 py-5">
+        {/* Clean header */}
+        <div className="p-6 pb-4">
           <Link
             href="/learn"
-            className="flex items-center gap-2 transition-all duration-200 hover:opacity-80"
+            className="group flex items-center gap-2.5 text-foreground/90 transition-colors hover:text-foreground"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 transition-transform duration-200 hover:scale-105">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 transition-all duration-200 group-hover:bg-primary/15 group-hover:scale-105">
               <GraduationCap className="h-4 w-4 text-primary" />
             </div>
-            <span className="font-mono text-sm font-bold tracking-tight">
+            <span className="text-[13px] font-semibold tracking-tight">
               Learning Hub
             </span>
           </Link>
-          {/* Progress indicator */}
-          <div className="mt-4 space-y-1.5">
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>{completedLessons.length} of {LESSONS.length} complete</span>
-              <span className="font-mono text-primary">{progressPercent}%</span>
-            </div>
-            <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.72_0.19_145)] transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+        </div>
+
+        {/* Minimal progress bar */}
+        <div className="mx-6 mb-6">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-2">
+            <span>{completedLessons.length}/{LESSONS.length} lessons</span>
+            <span className="tabular-nums">{progressPercent}%</span>
+          </div>
+          <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         </div>
 
-        {/* Lesson list */}
-        <nav className="flex-1 px-4 py-4 overflow-y-auto scrollbar-hide">
-          <ul className="space-y-1">
-            {LESSONS.map((lesson, index) => {
+        {/* Clean lesson list */}
+        <nav className="flex-1 overflow-y-auto px-3 scrollbar-hide">
+          <ul className="space-y-0.5">
+            {LESSONS.map((lesson) => {
               const isCompleted = completedLessons.includes(lesson.id);
               const isCurrent = lesson.id === currentLessonId;
-              const isPast = lesson.id < currentLessonId;
 
               return (
-                <li key={lesson.id} className="relative">
-                  {/* Connector line */}
-                  {index < LESSONS.length - 1 && (
-                    <div
-                      className={`absolute left-[22px] top-[34px] h-[calc(100%-10px)] w-px transition-colors duration-300 ${
-                        isCompleted || isPast
-                          ? "bg-[oklch(0.72_0.19_145)/30]"
-                          : "bg-border/30"
-                      }`}
-                    />
-                  )}
+                <li key={lesson.id}>
                   <Link
                     href={`/learn/${lesson.slug}`}
-                    className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200 ${
+                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-150 ${
                       isCurrent
-                        ? "bg-primary/15 text-primary"
-                        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                        ? "bg-primary/8 text-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
-                    {/* Glow effect for current */}
-                    {isCurrent && (
-                      <div className="absolute inset-0 rounded-lg bg-primary/10 blur-md -z-10" />
-                    )}
                     <div
-                      className={`relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-mono transition-all duration-300 ${
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium transition-all duration-200 ${
                         isCompleted
-                          ? "bg-[oklch(0.72_0.19_145)] text-white shadow-[0_0_12px_-2px] shadow-[oklch(0.72_0.19_145)/40]"
+                          ? "bg-emerald-500/15 text-emerald-500"
                           : isCurrent
-                            ? "bg-primary text-primary-foreground shadow-[0_0_12px_-2px] shadow-primary/40"
-                            : "bg-muted text-muted-foreground group-hover:bg-muted/80"
+                            ? "bg-primary/15 text-primary"
+                            : "bg-muted/80 text-muted-foreground group-hover:bg-muted"
                       }`}
                     >
                       {isCompleted ? (
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" strokeWidth={2.5} />
                       ) : (
-                        lesson.id + 1
+                        <span className="tabular-nums">{lesson.id + 1}</span>
                       )}
                     </div>
-                    <span className={`line-clamp-1 transition-colors duration-200 ${
-                      isCurrent ? "font-medium" : ""
-                    }`}>
-                      {lesson.title}
-                    </span>
+                    <span className="truncate">{lesson.title}</span>
                   </Link>
                 </li>
               );
@@ -177,23 +144,15 @@ function LessonSidebar({
           </ul>
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-border/50 p-4 space-y-2">
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground hover:text-foreground transition-colors duration-200"
+        {/* Minimal footer */}
+        <div className="p-4 border-t border-border/40">
+          <Link
+            href="/"
+            className="flex items-center gap-2 px-3 py-2 text-[13px] text-muted-foreground rounded-lg transition-colors hover:bg-muted/50 hover:text-foreground"
           >
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/60">
-            <Keyboard className="h-3 w-3" />
-            <span>Press ? for shortcuts</span>
-          </div>
+            <Home className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Link>
         </div>
       </div>
     </aside>
@@ -209,11 +168,19 @@ export function LessonContent({ lesson, content }: Props) {
   const prevLesson = getPreviousLesson(lesson.id);
   const nextLesson = getNextLesson(lesson.id);
   const isWizardComplete = completedSteps.length === TOTAL_WIZARD_STEPS;
-  const [showKeyboardHint, setShowKeyboardHint] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showFinalCelebration, setShowFinalCelebration] = useState(false);
   const { celebrate } = useConfetti();
+
+  // Refs for timeout cleanup
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const wizardStepSlugByLesson: Record<string, string> = {
     welcome: "launch-onboarding",
@@ -225,7 +192,6 @@ export function LessonContent({ lesson, content }: Props) {
   const wizardStepTitle = wizardStep?.title ?? "Setup Wizard";
 
   const handleMarkComplete = useCallback(() => {
-    // Don't re-celebrate if already completed
     if (isCompleted) {
       if (nextLesson) {
         router.push(`/learn/${nextLesson.slug}`);
@@ -236,114 +202,56 @@ export function LessonContent({ lesson, content }: Props) {
     markComplete(lesson.id);
     const isFinalLesson = !nextLesson;
 
-    // Fire confetti
     celebrate(isFinalLesson);
-
-    // Show toast with encouraging message
     setToastMessage(getCompletionMessage(isFinalLesson));
     setShowToast(true);
 
-    // Hide toast after 2.5 seconds
-    setTimeout(() => setShowToast(false), 2500);
+    timeoutsRef.current.push(setTimeout(() => setShowToast(false), 2500));
 
     if (isFinalLesson) {
-      // Show celebration modal for final lesson
-      setTimeout(() => setShowFinalCelebration(true), 500);
+      timeoutsRef.current.push(setTimeout(() => setShowFinalCelebration(true), 500));
     } else {
-      // Auto-advance to next lesson after brief delay
-      setTimeout(() => {
+      timeoutsRef.current.push(setTimeout(() => {
         router.push(`/learn/${nextLesson.slug}`);
-      }, 1500);
+      }, 1500));
     }
   }, [lesson.id, markComplete, nextLesson, router, celebrate, isCompleted]);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      // If the keyboard shortcuts overlay is open, treat any key press as "close"
-      // to match the UI text and prevent accidental navigation.
-      if (showKeyboardHint) {
-        setShowKeyboardHint(false);
         return;
       }
 
       switch (e.key) {
         case "ArrowLeft":
-        case "h": // vim-style
-          if (prevLesson) {
-            router.push(`/learn/${prevLesson.slug}`);
-          }
+        case "h":
+          if (prevLesson) router.push(`/learn/${prevLesson.slug}`);
           break;
         case "ArrowRight":
-        case "l": // vim-style
-          if (nextLesson) {
-            router.push(`/learn/${nextLesson.slug}`);
-          }
+        case "l":
+          if (nextLesson) router.push(`/learn/${nextLesson.slug}`);
           break;
         case "c":
-          if (!isCompleted) {
-            handleMarkComplete();
-          }
-          break;
-        case "?":
-          setShowKeyboardHint(prev => !prev);
+          if (!isCompleted) handleMarkComplete();
           break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [prevLesson, nextLesson, isCompleted, handleMarkComplete, router, showKeyboardHint]);
+  }, [prevLesson, nextLesson, isCompleted, handleMarkComplete, router]);
 
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Reading progress bar */}
-      <ReadingProgressBar progress={readingProgress} />
-
-      {/* Keyboard shortcuts hint (press ? to toggle) */}
-      {showKeyboardHint && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="mx-4 rounded-2xl border border-border/50 bg-card/95 p-6 shadow-xl">
-            <div className="mb-4 flex items-center gap-2 text-primary">
-              <Keyboard className="h-5 w-5" />
-              <h3 className="font-mono font-bold">Keyboard Shortcuts</h3>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between gap-8">
-                <span className="text-muted-foreground">Previous lesson</span>
-                <span className="font-mono text-foreground">← or h</span>
-              </div>
-              <div className="flex justify-between gap-8">
-                <span className="text-muted-foreground">Next lesson</span>
-                <span className="font-mono text-foreground">→ or l</span>
-              </div>
-              <div className="flex justify-between gap-8">
-                <span className="text-muted-foreground">Mark complete</span>
-                <span className="font-mono text-foreground">c</span>
-              </div>
-              <div className="flex justify-between gap-8">
-                <span className="text-muted-foreground">Toggle this help</span>
-                <span className="font-mono text-foreground">?</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowKeyboardHint(false)}
-              className="mt-4 w-full rounded-lg bg-primary/10 py-2 text-sm text-primary transition-colors hover:bg-primary/20"
-            >
-              Press any key to close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Background effects */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-cosmic opacity-50" />
-      <div className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-20" />
+    <div className="min-h-screen bg-background">
+      {/* Subtle reading progress */}
+      <div className="fixed left-0 right-0 top-0 z-50 h-[2px] bg-transparent">
+        <div
+          className="h-full bg-primary/60 transition-all duration-150"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
 
       {/* Celebration components */}
       <CompletionToast message={toastMessage} isVisible={showToast} />
@@ -356,7 +264,7 @@ export function LessonContent({ lesson, content }: Props) {
         }}
       />
 
-      <div className="relative flex">
+      <div className="flex">
         {/* Desktop sidebar */}
         <LessonSidebar
           currentLessonId={lesson.id}
@@ -364,186 +272,199 @@ export function LessonContent({ lesson, content }: Props) {
         />
 
         {/* Main content */}
-        <main className="flex-1 pb-32 lg:pb-8">
+        <main className="flex-1 min-w-0">
           {/* Mobile header */}
-          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/50 bg-background/80 px-4 py-3 backdrop-blur-sm lg:hidden">
+          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/40 bg-background/95 backdrop-blur-sm px-4 py-3 lg:hidden">
             <Link
               href="/learn"
-              className="flex items-center gap-2 text-muted-foreground"
+              className="flex items-center gap-2 text-muted-foreground text-sm"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm">All Lessons</span>
+              <span>Lessons</span>
             </Link>
-            <div className="text-xs text-muted-foreground">
-              <span className="font-mono text-primary">{lesson.id + 1}</span> of{" "}
-              {LESSONS.length}
+            <div className="text-xs text-muted-foreground tabular-nums">
+              {lesson.id + 1} / {LESSONS.length}
             </div>
           </div>
 
-          {/* Content area */}
-          <div className="px-6 py-8 md:px-12 md:py-12">
-            <div className="mx-auto max-w-2xl">
+          {/* Content area with constrained width */}
+          <div className="px-6 py-10 md:px-12 md:py-16 lg:px-16 lg:py-20">
+            <div className="mx-auto max-w-[680px]">
               {/* Lesson header */}
-              <div className="mb-8">
-                <div className="mb-4 flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="h-4 w-4" />
-                    Lesson {lesson.id + 1}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+              <header className="mb-12">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+                  <span className="tabular-nums">Lesson {lesson.id + 1}</span>
+                  <span className="text-border">·</span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
                     {lesson.duration}
                   </span>
                   {isCompleted && (
-                    <span className="flex items-center gap-1 text-[oklch(0.72_0.19_145)]">
-                      <Check className="h-4 w-4" />
-                      Completed
-                    </span>
+                    <>
+                      <span className="text-border">·</span>
+                      <span className="flex items-center gap-1.5 text-emerald-500">
+                        <Check className="h-3.5 w-3.5" />
+                        Complete
+                      </span>
+                    </>
                   )}
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">
                   {lesson.title}
                 </h1>
-                <p className="mt-2 text-lg text-muted-foreground">
+                <p className="text-lg text-muted-foreground leading-relaxed">
                   {lesson.description}
                 </p>
-              </div>
+              </header>
 
+              {/* Setup prompt */}
               {!isWizardComplete && (
-                <Card className="mb-8 border-amber-500/30 bg-amber-500/10 p-4">
-                  <div className="flex items-start gap-3 text-sm">
-                    <Terminal className="mt-0.5 h-4 w-4 text-amber-500" />
-                    <div className="space-y-1">
-                      <p className="font-medium text-foreground">
-                        Not set up yet?
+                <div className="mb-10 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+                  <div className="flex gap-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground mb-1">
+                        New here?
                       </p>
-                      <p className="text-muted-foreground">
-                        Complete the setup wizard first to get the most out of this lesson.
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Complete the setup wizard first to get the most from these lessons.
                       </p>
                       <Link
                         href={`/wizard/${wizardStepSlug}`}
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-amber-500 hover:text-amber-400 transition-colors"
                       >
-                        Go to {wizardStepTitle} →
+                        Go to {wizardStepTitle}
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
                     </div>
                   </div>
-                </Card>
+                </div>
               )}
 
-              {/* Markdown content - premium typography */}
-              {/* Note: headings are demoted by 1 level (h1->h2, h2->h3, etc.) since lesson.title is the page h1 */}
-              <article className="prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:mb-4 prose-h2:text-2xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-xl prose-h4:mt-6 prose-h4:mb-2 prose-h4:text-lg prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-5 prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-li:text-muted-foreground prose-li:leading-relaxed prose-ul:my-4 prose-ol:my-4 prose-blockquote:border-l-primary/50 prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-strong:text-foreground prose-strong:font-semibold">
+              {/* Premium markdown content */}
+              <article className="prose prose-neutral dark:prose-invert max-w-none
+                prose-headings:font-semibold prose-headings:tracking-tight
+                prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4
+                prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-3
+                prose-h4:text-lg prose-h4:mt-8 prose-h4:mb-2
+                prose-p:text-muted-foreground prose-p:leading-[1.8] prose-p:mb-6
+                prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-foreground prose-strong:font-semibold
+                prose-code:text-[13px] prose-code:font-normal prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
+                prose-li:text-muted-foreground prose-li:leading-[1.8]
+                prose-ul:my-6 prose-ol:my-6
+                prose-blockquote:border-l-2 prose-blockquote:border-primary/30 prose-blockquote:bg-muted/30 prose-blockquote:py-0.5 prose-blockquote:pl-4 prose-blockquote:pr-4 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-muted-foreground
+              ">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeHighlight]}
                   components={markdownComponents}
                 >
                   {content}
                 </ReactMarkdown>
               </article>
 
-              {/* Mark complete button */}
-              <Card className="mt-12 border-primary/20 bg-primary/5 p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Completion CTA */}
+              <div className="mt-16 pt-8 border-t border-border/40">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h3 className="font-semibold">
-                      {isCompleted ? "Lesson completed!" : "Finished this lesson?"}
+                    <h3 className="font-semibold text-foreground mb-1">
+                      {isCompleted ? "Ready to continue?" : "Finished reading?"}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {isCompleted
                         ? nextLesson
-                          ? "Ready to move on to the next one?"
+                          ? "Move on to the next lesson."
                           : "You've completed all lessons!"
-                        : "Mark it complete to track your progress."}
+                        : "Mark this lesson complete to track your progress."}
                     </p>
                   </div>
                   <Button
                     onClick={handleMarkComplete}
                     disabled={isCompleted && !nextLesson}
-                    className={
+                    size="lg"
+                    className={`shrink-0 ${
                       isCompleted
-                        ? "bg-[oklch(0.72_0.19_145)] hover:bg-[oklch(0.65_0.19_145)]"
+                        ? "bg-emerald-600 hover:bg-emerald-700"
                         : ""
-                    }
+                    }`}
                   >
                     {isCompleted ? (
                       nextLesson ? (
                         <>
                           Next Lesson
-                          <ArrowRight className="ml-1 h-4 w-4" />
+                          <ArrowRight className="ml-2 h-4 w-4" />
                         </>
                       ) : (
                         <>
-                          <Check className="mr-1 h-4 w-4" />
-                          All Done!
+                          <Check className="mr-2 h-4 w-4" />
+                          All Complete
                         </>
                       )
                     ) : (
                       <>
-                        <Check className="mr-1 h-4 w-4" />
+                        <Check className="mr-2 h-4 w-4" />
                         Mark Complete
                       </>
                     )}
                   </Button>
                 </div>
-              </Card>
+              </div>
 
-              {/* Navigation (desktop) */}
-              <div className="mt-8 hidden items-center justify-between lg:flex">
+              {/* Desktop navigation */}
+              <nav className="hidden lg:flex items-center justify-between mt-12 pt-8 border-t border-border/40">
                 {prevLesson ? (
-                  <Button variant="ghost" asChild>
-                    <Link href={`/learn/${prevLesson.slug}`}>
-                      <ChevronLeft className="mr-1 h-4 w-4" />
-                      {prevLesson.title}
-                    </Link>
-                  </Button>
+                  <Link
+                    href={`/learn/${prevLesson.slug}`}
+                    className="group flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-muted transition-colors">
+                      <ChevronLeft className="h-4 w-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-muted-foreground mb-0.5">Previous</div>
+                      <div className="font-medium text-foreground">{prevLesson.title}</div>
+                    </div>
+                  </Link>
                 ) : (
                   <div />
                 )}
                 {nextLesson && (
-                  <Button asChild>
-                    <Link href={`/learn/${nextLesson.slug}`}>
-                      {nextLesson.title}
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </Button>
+                  <Link
+                    href={`/learn/${nextLesson.slug}`}
+                    className="group flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors text-right"
+                  >
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground mb-0.5">Next</div>
+                      <div className="font-medium text-foreground">{nextLesson.title}</div>
+                    </div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-muted transition-colors">
+                      <ChevronRight className="h-4 w-4" />
+                    </div>
+                  </Link>
                 )}
-              </div>
+              </nav>
             </div>
           </div>
+
+          {/* Mobile bottom spacing */}
+          <div className="h-24 lg:hidden" />
         </main>
       </div>
 
-      {/* Mobile navigation - prev | complete | next */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/50 bg-background/95 backdrop-blur-md lg:hidden pb-safe">
-        {/* Progress dots */}
-        <div className="flex justify-center gap-1.5 py-2 border-b border-border/30">
-          {LESSONS.map((l) => (
-            <div
-              key={l.id}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                l.id === lesson.id
-                  ? "w-6 bg-primary"
-                  : completedLessons.includes(l.id)
-                    ? "w-1.5 bg-[oklch(0.72_0.19_145)]"
-                    : "w-1.5 bg-muted"
-              }`}
-            />
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 p-4">
-          {/* Previous button */}
+      {/* Mobile navigation bar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/40 bg-background/95 backdrop-blur-sm lg:hidden pb-safe">
+        <div className="flex items-center gap-2 p-3">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-12 w-12 shrink-0 touch-target transition-transform active:scale-95"
+            className="h-11 w-11 shrink-0"
             disabled={!prevLesson}
             asChild={!!prevLesson}
           >
             {prevLesson ? (
-              <Link href={`/learn/${prevLesson.slug}`} aria-label="Previous lesson">
+              <Link href={`/learn/${prevLesson.slug}`} aria-label="Previous">
                 <ChevronLeft className="h-5 w-5" />
               </Link>
             ) : (
@@ -551,46 +472,33 @@ export function LessonContent({ lesson, content }: Props) {
             )}
           </Button>
 
-          {/* Mark Complete button - prominent in center */}
           <Button
-            className={`h-12 flex-1 font-medium transition-all duration-200 active:scale-[0.98] ${
-              isCompleted
-                ? "bg-[oklch(0.72_0.19_145)] hover:bg-[oklch(0.65_0.19_145)] shadow-[0_0_20px_-5px] shadow-[oklch(0.72_0.19_145)/40]"
-                : "bg-primary hover:bg-primary/90 shadow-[0_0_20px_-5px] shadow-primary/40"
+            className={`h-11 flex-1 font-medium ${
+              isCompleted ? "bg-emerald-600 hover:bg-emerald-700" : ""
             }`}
             onClick={handleMarkComplete}
             disabled={isCompleted && !nextLesson}
           >
             {isCompleted ? (
               nextLesson ? (
-                <>
-                  Next Lesson
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </>
+                <>Next<ArrowRight className="ml-1.5 h-4 w-4" /></>
               ) : (
-                <>
-                  <Check className="mr-1 h-4 w-4" />
-                  All Done!
-                </>
+                <>Complete<Check className="ml-1.5 h-4 w-4" /></>
               )
             ) : (
-              <>
-                <Check className="mr-1 h-4 w-4" />
-                Mark Complete
-              </>
+              <>Mark Complete<Check className="ml-1.5 h-4 w-4" /></>
             )}
           </Button>
 
-          {/* Next button */}
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-12 w-12 shrink-0 touch-target transition-transform active:scale-95"
+            className="h-11 w-11 shrink-0"
             disabled={!nextLesson}
             asChild={!!nextLesson}
           >
             {nextLesson ? (
-              <Link href={`/learn/${nextLesson.slug}`} aria-label="Next lesson">
+              <Link href={`/learn/${nextLesson.slug}`} aria-label="Next">
                 <ChevronRight className="h-5 w-5" />
               </Link>
             ) : (

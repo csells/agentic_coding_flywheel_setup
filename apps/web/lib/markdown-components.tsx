@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode, HTMLAttributes, AnchorHTMLAttributes, TableHTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react";
+import { type ReactNode, type HTMLAttributes, type AnchorHTMLAttributes, type TableHTMLAttributes, type TdHTMLAttributes, type ThHTMLAttributes } from "react";
 import { Check, Copy } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 /**
  * ReactMarkdown passes AST-related props (node, siblingCount, index, etc.) to custom components.
@@ -135,6 +135,16 @@ function InlineCode({ children, ...props }: MarkdownProps) {
 function Pre({ children, ...props }: MarkdownProps) {
   const safeProps = sanitizeProps(props) as HTMLAttributes<HTMLPreElement>;
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = useCallback(async () => {
     // Extract text content from children
@@ -151,9 +161,18 @@ function Pre({ children, ...props }: MarkdownProps) {
 
     const text = extractText(children);
     if (text) {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        // Clear any existing timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // Clipboard API not available or permission denied - fail silently
+        console.warn("Failed to copy to clipboard");
+      }
     }
   }, [children]);
 
