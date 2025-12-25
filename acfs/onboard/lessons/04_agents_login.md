@@ -135,7 +135,7 @@ Let's verify your agents are ready:
 which claude codex gemini
 
 # Check your agent credential backups
-caam list
+caam ls
 
 # If you haven't logged in yet, start with Claude:
 claude auth login
