@@ -194,9 +194,12 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     strategy: 'afterInteractive' as const,
   };
 
-  // Build the GA config script as a plain string to avoid RSC serialization issues
-  const gaConfigScript = `
-window.dataLayer = window.dataLayer || [];
+  return (
+    <>
+      {/* Google Analytics Script */}
+      <Script {...gaExternalScriptProps} />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', '${gaId}', {
@@ -212,17 +215,8 @@ gtag('config', '${gaId}', {
     'dimension4': 'vps_provider',
     'dimension5': 'terminal_app'
   }
-});`;
-
-  return (
-    <>
-      {/* Google Analytics Script */}
-      <Script {...gaExternalScriptProps} />
-      <Script
-        id="google-analytics"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{ __html: gaConfigScript }}
-      />
+});`}
+      </Script>
       {children}
     </>
   );
