@@ -13,9 +13,10 @@ import {
   Search,
   Terminal,
   Wrench,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { motion } from "@/components/motion";
-import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
 import { springs, staggerDelay } from "@/lib/design-tokens";
 
@@ -44,48 +45,56 @@ const CATEGORY_META: Array<{
   name: string;
   description: string;
   icon: ReactNode;
+  gradient: string;
 }> = [
   {
     id: "agents",
     name: "AI Agents",
     description: "Your three coding agents (aliases included)",
     icon: <Bot className="h-5 w-5" />,
+    gradient: "from-violet-500/20 to-purple-500/20",
   },
   {
     id: "stack",
     name: "Dicklesworthstone Stack",
     description: "The 8-tool orchestration stack (plus Beads)",
     icon: <Terminal className="h-5 w-5" />,
+    gradient: "from-primary/20 to-blue-500/20",
   },
   {
     id: "search",
     name: "Search & Navigation",
     description: "Find code and jump around fast",
     icon: <Search className="h-5 w-5" />,
+    gradient: "from-emerald-500/20 to-teal-500/20",
   },
   {
     id: "git",
     name: "Git & Repo Tools",
     description: "Version control and GitHub workflows",
     icon: <GitBranch className="h-5 w-5" />,
+    gradient: "from-orange-500/20 to-amber-500/20",
   },
   {
     id: "system",
     name: "System & Terminal UX",
     description: "Everyday terminal helpers installed by ACFS",
     icon: <Wrench className="h-5 w-5" />,
+    gradient: "from-pink-500/20 to-rose-500/20",
   },
   {
     id: "languages",
     name: "Languages & Runtimes",
     description: "Bun, Python (uv), Rust, Go",
     icon: <Code2 className="h-5 w-5" />,
+    gradient: "from-cyan-500/20 to-sky-500/20",
   },
   {
     id: "cloud",
     name: "Cloud & Infra",
     description: "Deploy, DNS, secrets, databases",
     icon: <Cloud className="h-5 w-5" />,
+    gradient: "from-indigo-500/20 to-violet-500/20",
   },
 ];
 
@@ -385,13 +394,13 @@ function CategoryChip({
     <motion.button
       type="button"
       onClick={onClick}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
       transition={springs.stiff}
-      className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+      className={`rounded-full border px-5 py-2.5 text-sm font-medium transition-all duration-300 ${
         isSelected
-          ? "border-primary/50 bg-primary/15 text-primary shadow-sm shadow-primary/10"
-          : "border-border/50 bg-card/40 text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-foreground"
+          ? "border-primary/50 bg-gradient-to-r from-primary/20 to-violet-500/20 text-white shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
+          : "border-white/[0.08] bg-white/[0.03] text-white/60 hover:border-white/20 hover:bg-white/[0.06] hover:text-white/80"
       }`}
     >
       {label}
@@ -404,69 +413,81 @@ function CategoryCard({
   description,
   icon,
   commands,
+  gradient,
   index = 0,
 }: {
   title: string;
   description: string;
   icon: ReactNode;
   commands: CommandEntry[];
+  gradient: string;
   index?: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...springs.smooth, delay: staggerDelay(index, 0.08) }}
     >
-      <Card className="group overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
-        <div className="border-b border-border/30 bg-muted/20 p-5">
-          <div className="flex items-start gap-4">
-            <motion.div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all group-hover:bg-primary/20 group-hover:shadow-md group-hover:shadow-primary/10"
-              whileHover={{ scale: 1.05, rotate: 3 }}
-              transition={springs.stiff}
-            >
-              {icon}
-            </motion.div>
+      <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl transition-all duration-500 hover:border-white/[0.15] hover:bg-white/[0.04]">
+        {/* Gradient glow on hover */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+
+        {/* Header */}
+        <div className="relative border-b border-white/[0.06] p-6">
+          <div className="flex items-start gap-5">
+            {/* Icon with glow */}
+            <div className="relative shrink-0">
+              <div className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500 scale-110`} />
+              <motion.div
+                className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.08] border border-white/[0.12] text-white transition-all duration-300 group-hover:scale-110"
+                whileHover={{ rotate: 5 }}
+                transition={springs.stiff}
+              >
+                {icon}
+              </motion.div>
+            </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold">{title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              <h2 className="text-xl font-bold text-white">{title}</h2>
+              <p className="mt-1 text-sm text-white/50">{description}</p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-6 p-5">
+        {/* Commands */}
+        <div className="relative space-y-6 p-6">
           {commands.map((cmd) => {
             const anchorId = toAnchorId(cmd.name);
             return (
-              <div key={`${cmd.category}:${cmd.name}`} id={anchorId} className="scroll-mt-28">
-                <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div key={`${cmd.category}:${cmd.name}`} id={anchorId} className="scroll-mt-28 group/cmd">
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-3">
-                      <code className="font-mono text-base font-bold text-foreground">
+                      <code className="font-mono text-lg font-bold text-white">
                         {cmd.name}
                       </code>
-                      <span className="text-sm font-medium text-muted-foreground">
+                      <span className="text-sm font-medium text-white/40">
                         {cmd.fullName}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-sm text-white/50 leading-relaxed">
                       {cmd.description}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4 shrink-0">
                     <Link
                       href={`#${anchorId}`}
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                      className="text-xs text-white/30 hover:text-white/60 transition-colors font-mono"
                     >
                       #{anchorId}
                     </Link>
                     {cmd.learnMoreHref && (
                       <Link
                         href={cmd.learnMoreHref}
-                        className="text-sm text-primary hover:underline"
+                        className="group/link flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                       >
-                        Full docs →
+                        <span>Docs</span>
+                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5" />
                       </Link>
                     )}
                   </div>
@@ -477,7 +498,7 @@ function CategoryCard({
             );
           })}
         </div>
-      </Card>
+      </div>
     </motion.div>
   );
 }
@@ -520,66 +541,112 @@ export default function CommandReferencePage() {
   const hasAnyResults = filteredCommands.length > 0;
 
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Background effects */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-cosmic opacity-50" />
-      <div className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-20" />
-
-      {/* Floating orbs */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-[oklch(0.75_0.18_195/0.08)] blur-[100px] animate-pulse-glow" />
-        <div className="absolute -right-32 top-2/3 h-80 w-80 rounded-full bg-[oklch(0.7_0.2_330/0.06)] blur-[80px] animate-pulse-glow" style={{ animationDelay: "2s" }} />
+    <div className="min-h-screen bg-black relative overflow-x-hidden">
+      {/* Dramatic ambient background */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Large primary orb */}
+        <div className="absolute w-[700px] h-[700px] bg-primary/10 blur-[180px] rounded-full -top-48 left-1/4 animate-float" />
+        {/* Secondary orb */}
+        <div className="absolute w-[500px] h-[500px] bg-violet-500/10 blur-[150px] rounded-full top-1/2 -right-32 animate-float" style={{ animationDelay: "2s" }} />
+        {/* Tertiary orb */}
+        <div className="absolute w-[400px] h-[400px] bg-emerald-500/8 blur-[120px] rounded-full bottom-0 left-0 animate-float" style={{ animationDelay: "4s" }} />
+        {/* Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:80px_80px]" />
       </div>
 
-      <div className="relative mx-auto max-w-5xl px-6 py-8 md:px-12 md:py-12">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+      <div className="relative mx-auto max-w-6xl px-5 py-8 sm:px-8 md:px-12 lg:py-12">
+        {/* Header navigation */}
+        <motion.header
+          className="mb-10 flex items-center justify-between"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={springs.smooth}
+        >
           <Link
             href="/learn"
-            className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+            className="group flex items-center gap-3 text-white/50 transition-all duration-300 hover:text-white"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm">Learning Hub</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] transition-all duration-300 group-hover:scale-110 group-hover:bg-white/[0.1]">
+              <ArrowLeft className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-medium">Learning Hub</span>
           </Link>
           <Link
             href="/"
-            className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+            className="group flex items-center gap-3 text-white/50 transition-all duration-300 hover:text-white"
           >
-            <Home className="h-4 w-4" />
-            <span className="text-sm">Home</span>
-          </Link>
-        </div>
-
-        {/* Hero */}
-        <div className="mb-10 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.7_0.2_330)] shadow-lg shadow-primary/20">
-              <Cpu className="h-8 w-8 text-primary-foreground" />
+            <span className="text-sm font-medium">Home</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] transition-all duration-300 group-hover:scale-110 group-hover:bg-white/[0.1]">
+              <Home className="h-4 w-4" />
             </div>
-          </div>
-          <h1 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
-            Command Reference
+          </Link>
+        </motion.header>
+
+        {/* Hero section */}
+        <motion.section
+          className="mb-12 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springs.smooth, delay: 0.1 }}
+        >
+          {/* Icon with glow */}
+          <motion.div
+            className="mb-6 inline-flex"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ ...springs.bouncy, delay: 0.2 }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-violet-500 rounded-2xl blur-xl opacity-50" />
+              <div className="relative flex h-18 w-18 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/30 to-violet-500/30 border border-white/20 shadow-2xl shadow-primary/20">
+                <Cpu className="h-9 w-9 text-white drop-shadow-lg" />
+              </div>
+              <Sparkles className="absolute -right-2 -top-2 h-5 w-5 text-primary animate-pulse" />
+            </div>
+          </motion.div>
+
+          <h1 className="mb-4 text-4xl sm:text-5xl font-bold tracking-tight">
+            <span className="bg-gradient-to-br from-white via-white to-white/50 bg-clip-text text-transparent">
+              Command Reference
+            </span>
           </h1>
-          <p className="mx-auto max-w-xl text-lg text-muted-foreground">
+          <p className="mx-auto max-w-2xl text-lg text-white/50 leading-relaxed">
             A quick, searchable list of the commands you&apos;ll use most in an
             ACFS environment.
           </p>
-        </div>
+        </motion.section>
 
-        {/* Search */}
-        <div className="relative mb-6 group">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-          <input
-            type="text"
-            placeholder="Search commands..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-border/50 bg-card/60 py-3.5 pl-12 pr-4 text-foreground shadow-sm backdrop-blur-sm placeholder:text-muted-foreground transition-all duration-200 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:shadow-lg focus:shadow-primary/5"
-          />
-        </div>
+        {/* Search - stunning glassmorphic */}
+        <motion.div
+          className="relative mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springs.smooth, delay: 0.2 }}
+        >
+          <div className="group relative">
+            {/* Glow on focus */}
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/30 via-violet-500/20 to-primary/30 blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
 
-        {/* Category filter */}
-        <div className="mb-10 flex flex-wrap gap-2">
+            <div className="relative">
+              <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30 transition-colors group-focus-within:text-primary" />
+              <input
+                type="text"
+                placeholder="Search commands..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-4 pl-14 pr-5 text-white placeholder:text-white/30 backdrop-blur-xl transition-all duration-300 focus:border-primary/50 focus:bg-white/[0.05] focus:outline-none focus:shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]"
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Category filters */}
+        <motion.div
+          className="mb-12 flex flex-wrap gap-2 justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ ...springs.smooth, delay: 0.3 }}
+        >
           <CategoryChip
             label="All"
             isSelected={category === "all"}
@@ -593,7 +660,7 @@ export default function CommandReferencePage() {
               onClick={() => setCategory(c.id)}
             />
           ))}
-        </div>
+        </motion.div>
 
         {/* Content */}
         <div className="space-y-8">
@@ -608,24 +675,36 @@ export default function CommandReferencePage() {
                   description={meta.description}
                   icon={meta.icon}
                   commands={cmds}
+                  gradient={meta.gradient}
                   index={idx}
                 />
               );
             })
           ) : (
             <motion.div
-              className="py-12 text-center"
+              className="py-20 text-center"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={springs.smooth}
             >
-              <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">
+              <div className="relative inline-flex mb-6">
+                <div className="absolute inset-0 bg-white/10 rounded-2xl blur-xl" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.05] border border-white/[0.08]">
+                  <Search className="h-8 w-8 text-white/30" />
+                </div>
+              </div>
+              <p className="text-lg text-white/40">
                 No commands match your search.
+              </p>
+              <p className="text-sm text-white/25 mt-2">
+                Try a different keyword or clear the filter.
               </p>
             </motion.div>
           )}
         </div>
+
+        {/* Footer spacer */}
+        <div className="h-20" />
       </div>
     </div>
   );

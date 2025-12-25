@@ -16,10 +16,10 @@ import {
   Play,
   Terminal,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { motion } from "@/components/motion";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   LESSONS,
   TOTAL_LESSONS,
@@ -27,7 +27,7 @@ import {
   getCompletionPercentage,
   getNextUncompletedLesson,
 } from "@/lib/lessonProgress";
-import { backgrounds, springs } from "@/lib/design-tokens";
+import { springs } from "@/lib/design-tokens";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 type LessonStatus = "completed" | "current" | "locked";
@@ -39,7 +39,6 @@ function getLessonStatus(
   if (completedLessons.includes(lessonId)) {
     return "completed";
   }
-  // First uncompleted lesson is "current"
   const firstUncompleted = LESSONS.find(
     (l) => !completedLessons.includes(l.id)
   );
@@ -68,31 +67,37 @@ function LessonCard({
     <motion.div
       initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: index * 0.05 }}
-      whileHover={isAccessible && !prefersReducedMotion ? { y: -4, scale: 1.02 } : undefined}
+      transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: index * 0.04 }}
+      whileHover={isAccessible && !prefersReducedMotion ? { y: -6, scale: 1.02 } : undefined}
       whileTap={isAccessible && !prefersReducedMotion ? { scale: 0.98 } : undefined}
+      className="h-full"
     >
-      <Card
-        className={`group relative overflow-hidden p-5 transition-all duration-300 ${
+      <div
+        className={`group relative h-full overflow-hidden rounded-2xl border p-5 transition-all duration-500 ${
           status === "completed"
-            ? "border-[oklch(0.72_0.19_145/0.3)] bg-[oklch(0.72_0.19_145/0.05)]"
+            ? "border-[oklch(0.72_0.19_145/0.4)] bg-[oklch(0.72_0.19_145/0.08)]"
             : status === "current"
-              ? "border-primary/50 bg-primary/5 ring-2 ring-primary/20"
-              : "border-border/50 bg-muted/30 opacity-60"
-        } ${isAccessible ? "cursor-pointer hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10" : "cursor-not-allowed"} ${
-          isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
-        }`}
+              ? "border-primary/50 bg-primary/10"
+              : "border-white/[0.06] bg-white/[0.02] opacity-60"
+        } ${isAccessible ? "cursor-pointer hover:border-primary/60 hover:bg-white/[0.06]" : "cursor-not-allowed"} ${
+          isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-black" : ""
+        } backdrop-blur-xl`}
       >
-        {/* Hover glow effect */}
+        {/* Ambient glow on hover */}
         {isAccessible && (
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        )}
+
+        {/* Top gradient line */}
+        {status === "current" && (
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
         )}
 
         {/* Status indicator */}
-        <div className="absolute right-3 top-3">
+        <div className="absolute right-4 top-4">
           {status === "completed" ? (
             <motion.div
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-[oklch(0.72_0.19_145)]"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-[oklch(0.72_0.19_145)] shadow-lg shadow-[oklch(0.72_0.19_145/0.4)]"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={springs.bouncy}
@@ -101,50 +106,56 @@ function LessonCard({
             </motion.div>
           ) : status === "current" ? (
             <motion.div
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
-              animate={prefersReducedMotion ? undefined : { scale: [1, 1.1, 1] }}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/40"
+              animate={prefersReducedMotion ? undefined : { scale: [1, 1.15, 1] }}
               transition={prefersReducedMotion ? undefined : { duration: 2, repeat: Infinity }}
             >
-              <Play className="h-3 w-3 text-primary-foreground" />
+              <Play className="h-3.5 w-3.5 text-primary-foreground" />
             </motion.div>
           ) : (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
-              <Lock className="h-3 w-3 text-muted-foreground" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] backdrop-blur">
+              <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />
             </div>
           )}
         </div>
 
-        {/* Lesson number */}
-        <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-muted font-mono text-sm font-bold text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+        {/* Lesson number with glow */}
+        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl font-mono text-sm font-bold transition-all duration-300 ${
+          status === "completed"
+            ? "bg-[oklch(0.72_0.19_145/0.2)] text-[oklch(0.72_0.19_145)]"
+            : status === "current"
+              ? "bg-primary/20 text-primary shadow-lg shadow-primary/20"
+              : "bg-white/[0.04] text-muted-foreground/60"
+        } group-hover:bg-primary/20 group-hover:text-primary`}>
           {lesson.id + 1}
         </div>
 
         {/* Title */}
         <h3
-          className={`mb-1 font-semibold transition-colors ${status === "locked" ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}
+          className={`mb-2 text-lg font-semibold transition-colors ${status === "locked" ? "text-muted-foreground/60" : "text-foreground group-hover:text-primary"}`}
         >
           {lesson.title}
         </h3>
 
         {/* Description */}
-        <p className="mb-3 text-sm text-muted-foreground">{lesson.description}</p>
+        <p className="mb-4 text-sm leading-relaxed text-muted-foreground/80">{lesson.description}</p>
 
-        {/* Duration */}
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
+        {/* Duration with icon */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60">
+          <Clock className="h-3.5 w-3.5" />
           <span>{lesson.duration}</span>
         </div>
 
         {/* Hover arrow */}
         {isAccessible && (
-          <ChevronRight className="absolute bottom-4 right-4 h-5 w-5 text-muted-foreground opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+          <ChevronRight className="absolute bottom-4 right-4 h-5 w-5 text-primary/40 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary group-hover:opacity-100" />
         )}
-      </Card>
+      </div>
     </motion.div>
   );
 
   if (isAccessible) {
-    return <Link href={`/learn/${lesson.slug}`}>{cardContent}</Link>;
+    return <Link href={`/learn/${lesson.slug}`} className="block h-full">{cardContent}</Link>;
   }
 
   return cardContent;
@@ -204,189 +215,216 @@ export default function LearnDashboard() {
   }, [handleKeyDown]);
 
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Background effects */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-cosmic opacity-50" />
-      <div className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-20" />
+    <div className="relative min-h-screen bg-black">
+      {/* Ambient background effects */}
+      <div className="pointer-events-none fixed inset-0">
+        {/* Primary glow - top left */}
+        <div className="absolute -left-32 -top-32 h-[600px] w-[600px] rounded-full bg-primary/8 blur-[150px]" />
+        {/* Secondary glow - bottom right */}
+        <div className="absolute -bottom-32 -right-32 h-[500px] w-[500px] rounded-full bg-emerald-500/6 blur-[120px]" />
+        {/* Accent glow - center */}
+        <div className="absolute left-1/2 top-1/3 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-violet-500/4 blur-[100px]" />
+      </div>
 
-      {/* Floating orbs - hidden on mobile for performance */}
-      <div className={backgrounds.orbCyan} />
-      <div className={backgrounds.orbPink} />
+      {/* Noise texture overlay */}
+      <div className="pointer-events-none fixed inset-0 bg-[url('/noise.png')] opacity-[0.015]" />
 
-      <div className="relative mx-auto max-w-5xl px-6 py-8 md:px-12 md:py-12">
-        {/* Header */}
-        <motion.div
-          className="mb-8 flex items-center justify-between"
+      <div className="relative mx-auto max-w-6xl px-4 py-6 sm:px-6 md:px-8 lg:px-12 lg:py-10">
+        {/* Header navigation */}
+        <motion.header
+          className="mb-8 flex items-center justify-between lg:mb-12"
           initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : springs.smooth}
         >
           <Link
             href="/"
-            className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+            className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
-            <Home className="h-4 w-4" />
-            <span className="text-sm">Home</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] backdrop-blur transition-colors group-hover:bg-white/[0.08]">
+              <Home className="h-4 w-4" />
+            </div>
+            <span className="hidden text-sm sm:block">Home</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="hidden text-xs text-muted-foreground sm:block">
-              Press <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">j</kbd>/<kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">k</kbd> to navigate
+
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="hidden text-xs text-muted-foreground/60 lg:block">
+              <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px]">j</kbd>
+              /
+              <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px]">k</kbd>
+              {" "}to navigate
             </span>
             <Link
               href="/wizard/os-selection"
-              className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+              className="group flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-muted-foreground backdrop-blur transition-all hover:bg-white/[0.08] hover:text-foreground"
             >
               <Terminal className="h-4 w-4" />
               <span className="text-sm">Setup Wizard</span>
             </Link>
           </div>
-        </motion.div>
+        </motion.header>
 
         {/* Hero section */}
-        <motion.div
-          className="mb-12 text-center"
+        <motion.section
+          className="mb-10 text-center lg:mb-14"
           initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.1 }}
         >
+          {/* Icon with glow */}
           <motion.div
-            className="mb-4 flex justify-center"
+            className="mb-5 inline-flex"
             initial={prefersReducedMotion ? false : { scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : { ...springs.bouncy, delay: 0.2 }}
           >
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 shadow-lg shadow-primary/20">
-              <GraduationCap className="h-8 w-8 text-primary" />
-              {/* Sparkle effect - respects reduced motion */}
-              <Sparkles className={`absolute -right-1 -top-1 h-4 w-4 text-primary ${prefersReducedMotion ? "" : "animate-pulse"}`} />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl bg-primary/30 blur-xl" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 backdrop-blur-xl lg:h-20 lg:w-20">
+                <GraduationCap className="h-8 w-8 text-primary lg:h-10 lg:w-10" />
+              </div>
+              <Sparkles className={`absolute -right-1 -top-1 h-5 w-5 text-primary ${prefersReducedMotion ? "" : "animate-pulse"}`} />
             </div>
           </motion.div>
-          <h1 className="mb-3 font-mono text-3xl font-bold tracking-tight md:text-4xl">
+
+          <h1 className="mb-4 bg-gradient-to-b from-white via-white to-white/60 bg-clip-text font-mono text-3xl font-bold tracking-tight text-transparent sm:text-4xl lg:text-5xl">
             Learning Hub
           </h1>
-          <p className="mx-auto max-w-xl text-lg text-muted-foreground">
-            Master your new agentic coding environment with these hands-on
-            lessons. Start from the basics and work your way to advanced
-            workflows.
+          <p className="mx-auto max-w-2xl text-base text-muted-foreground/80 sm:text-lg">
+            Master your agentic coding environment with hands-on lessons.
+            <span className="hidden sm:inline"> Start from the basics and progress to advanced workflows.</span>
           </p>
-        </motion.div>
+        </motion.section>
 
-        {/* Progress card */}
-        <motion.div
+        {/* Progress card - glassmorphic */}
+        <motion.section
           initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.2 }}
         >
-          <Card className="group relative mb-10 overflow-hidden border-primary/20 bg-primary/5 p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10">
-            {/* Subtle gradient glow on hover */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-[oklch(0.7_0.2_330/0.05)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          <div className="group relative mb-10 overflow-hidden rounded-2xl border border-primary/20 bg-primary/5 p-5 backdrop-blur-xl transition-all duration-500 hover:border-primary/30 sm:p-6 lg:mb-14 lg:p-8">
+            {/* Inner glow */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5" />
 
-            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            {/* Top shimmer line */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex-1">
                 <div className="mb-2 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <h2 className="font-semibold">Your Progress</h2>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold">Your Progress</h2>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground/80 sm:text-base">
                   {completedLessons.length === TOTAL_LESSONS
-                    ? "Congratulations! You've completed all lessons."
+                    ? "🎉 Congratulations! You've mastered all lessons."
                     : nextLesson
                       ? `Up next: ${nextLesson.title}`
-                      : "Start your learning journey"}
+                      : "Begin your learning journey"}
                 </p>
               </div>
 
-              <div className="flex items-center gap-4">
-                {/* Circular progress with animation */}
+              <div className="flex items-center gap-5 lg:gap-6">
+                {/* Circular progress with glow */}
                 <motion.div
-                  className="relative h-16 w-16"
+                  className="relative h-18 w-18 sm:h-20 sm:w-20"
                   initial={prefersReducedMotion ? false : { scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={prefersReducedMotion ? { duration: 0 } : { ...springs.bouncy, delay: 0.3 }}
                 >
-                  <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+                  {/* Glow behind progress ring */}
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg" />
+                  <svg className="relative h-full w-full -rotate-90" viewBox="0 0 36 36">
                     <path
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
-                      className="stroke-muted"
-                      strokeWidth="3"
+                      className="stroke-white/[0.08]"
+                      strokeWidth="2.5"
                     />
                     <motion.path
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
                       className="stroke-primary"
-                      strokeWidth="3"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
                       initial={prefersReducedMotion ? { strokeDasharray: `${completionPercentage}, 100` } : { strokeDasharray: "0, 100" }}
                       animate={{ strokeDasharray: `${completionPercentage}, 100` }}
                       transition={prefersReducedMotion ? { duration: 0 } : { duration: 1, delay: 0.5, ease: "easeOut" }}
+                      style={{ filter: "drop-shadow(0 0 6px oklch(0.7 0.2 280 / 0.5))" }}
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-sm font-bold">
+                    <span className="font-mono text-base font-bold text-primary sm:text-lg">
                       {completionPercentage}%
                     </span>
                   </div>
                 </motion.div>
 
                 {/* Stats */}
-                <div className="text-sm">
+                <div>
                   <motion.div
-                    className="font-mono text-2xl font-bold text-primary"
+                    className="font-mono text-3xl font-bold text-primary sm:text-4xl"
                     initial={prefersReducedMotion ? false : { opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.4 }}
+                    style={{ textShadow: "0 0 30px oklch(0.7 0.2 280 / 0.3)" }}
                   >
                     {completedLessons.length}/{TOTAL_LESSONS}
                   </motion.div>
-                  <div className="text-muted-foreground">lessons complete</div>
+                  <div className="text-sm text-muted-foreground/60">lessons complete</div>
                 </div>
               </div>
             </div>
 
-            {/* Progress bar */}
-            <div className="relative mt-4">
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
+            {/* Progress bar with shimmer */}
+            <div className="relative mt-5 lg:mt-6">
+              <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-primary to-[oklch(0.7_0.2_330)]"
+                  className="relative h-full bg-gradient-to-r from-primary via-primary to-emerald-400"
                   initial={prefersReducedMotion ? { width: `${completionPercentage}%` } : { width: 0 }}
                   animate={{ width: `${completionPercentage}%` }}
                   transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                />
+                  style={{ boxShadow: "0 0 20px oklch(0.7 0.2 280 / 0.5)" }}
+                >
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                </motion.div>
               </div>
             </div>
 
             {/* Continue button */}
             {nextLesson && (
               <motion.div
-                className="mt-4"
+                className="mt-5 lg:mt-6"
                 initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.6 }}
               >
-                <Button asChild className="w-full sm:w-auto">
+                <Button asChild size="lg" className="group w-full gap-2 sm:w-auto">
                   <Link href={`/learn/${nextLesson.slug}`}>
+                    <Zap className="h-4 w-4" />
                     Continue Learning
-                    <ChevronRight className="ml-1 h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </Button>
               </motion.div>
             )}
-          </Card>
-        </motion.div>
+          </div>
+        </motion.section>
 
         {/* Lessons grid */}
-        <motion.div
-          className="mb-8"
+        <motion.section
+          className="mb-10 lg:mb-14"
           initial={prefersReducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.3 }}
         >
-          <h2 className="mb-4 text-xl font-semibold">All Lessons</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="mb-5 text-xl font-semibold lg:mb-6 lg:text-2xl">All Lessons</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
             {LESSONS.map((lesson, index) => {
               const status = getLessonStatus(lesson.id, completedLessons);
-              // Find the accessible index for keyboard navigation
               const accessibleIndex = accessibleLessons.findIndex(
                 (l) => l.id === lesson.id
               );
@@ -402,44 +440,48 @@ export default function LearnDashboard() {
               );
             })}
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* Quick reference links */}
-        <motion.div
+        {/* Quick reference links - glassmorphic */}
+        <motion.section
           initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.5 }}
         >
-          <Card className="group relative overflow-hidden p-6 transition-all duration-300 hover:border-primary/30">
-            {/* Subtle hover glow */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-xl sm:p-6 lg:p-8">
+            {/* Subtle gradient */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent" />
 
-            <h2 className="relative mb-4 text-lg font-semibold">Quick Reference</h2>
-            <div className="relative grid gap-4 sm:grid-cols-2">
+            <h2 className="relative mb-5 text-lg font-semibold lg:mb-6 lg:text-xl">Quick Reference</h2>
+            <div className="relative grid gap-3 sm:grid-cols-2 sm:gap-4">
               {[
                 {
                   href: "/learn/agent-commands",
                   icon: Terminal,
                   title: "Agent Commands",
                   desc: "Claude, Codex, Gemini shortcuts",
+                  gradient: "from-violet-500/10 to-violet-500/5",
                 },
                 {
                   href: "/learn/ntm-palette",
                   icon: BookOpen,
                   title: "NTM Commands",
                   desc: "Session management reference",
+                  gradient: "from-blue-500/10 to-blue-500/5",
                 },
                 {
                   href: "/learn/commands",
                   icon: List,
                   title: "Command Reference",
                   desc: "Searchable list of key commands",
+                  gradient: "from-emerald-500/10 to-emerald-500/5",
                 },
                 {
                   href: "/learn/glossary",
                   icon: Book,
                   title: "Glossary",
                   desc: "Definitions for all jargon terms",
+                  gradient: "from-amber-500/10 to-amber-500/5",
                 },
               ].map((item, index) => (
                 <motion.div
@@ -447,29 +489,32 @@ export default function LearnDashboard() {
                   initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.6 + index * 0.05 }}
-                  whileHover={prefersReducedMotion ? undefined : { y: -2 }}
+                  whileHover={prefersReducedMotion ? undefined : { y: -3, scale: 1.01 }}
                 >
                   <Link
                     href={item.href}
-                    className="flex items-center gap-3 rounded-lg border border-border/50 p-4 transition-all duration-300 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/5"
+                    className={`group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-gradient-to-br ${item.gradient} p-4 backdrop-blur transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.04]`}
                   >
-                    <item.icon className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
-                    <div>
-                      <div className="font-medium">{item.title}</div>
-                      <div className="text-sm text-muted-foreground">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] transition-colors group-hover:bg-white/[0.1]">
+                      <item.icon className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium transition-colors group-hover:text-primary">{item.title}</div>
+                      <div className="truncate text-sm text-muted-foreground/60">
                         {item.desc}
                       </div>
                     </div>
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/40 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
                   </Link>
                 </motion.div>
               ))}
             </div>
-          </Card>
-        </motion.div>
+          </div>
+        </motion.section>
 
         {/* Footer */}
-        <motion.div
-          className="mt-12 pb-24 text-center text-sm text-muted-foreground sm:pb-0"
+        <motion.footer
+          className="mt-10 pb-28 text-center text-sm text-muted-foreground/60 sm:pb-0 lg:mt-14"
           initial={prefersReducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.8 }}
@@ -480,26 +525,29 @@ export default function LearnDashboard() {
               Start the setup wizard →
             </Link>
           </p>
-        </motion.div>
+        </motion.footer>
       </div>
 
-      {/* Mobile fixed bottom bar - thumb-zone friendly */}
+      {/* Mobile fixed bottom bar - glassmorphic */}
       {nextLesson && (
         <motion.div
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-border/50 bg-background/95 p-4 backdrop-blur-lg sm:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.08] bg-black/80 p-4 pb-safe backdrop-blur-xl sm:hidden"
           initial={prefersReducedMotion ? false : { y: 100 }}
           animate={{ y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : { ...springs.smooth, delay: 0.5 }}
         >
+          {/* Top glow line */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs text-muted-foreground">Up next</p>
+              <p className="truncate text-xs text-muted-foreground/60">Up next</p>
               <p className="truncate text-sm font-medium">{nextLesson.title}</p>
             </div>
-            <Button asChild size="lg" className="shrink-0">
+            <Button asChild size="lg" className="shrink-0 gap-1.5">
               <Link href={`/learn/${nextLesson.slug}`}>
                 Continue
-                <ChevronRight className="ml-1 h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
