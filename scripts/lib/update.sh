@@ -367,7 +367,10 @@ update_run_verified_installer() {
         return 1
     fi
 
-    verify_checksum "$url" "$expected_sha256" "$tool" | bash -s -- "$@"
+    (
+        set -o pipefail
+        verify_checksum "$url" "$expected_sha256" "$tool" | bash -s -- "$@"
+    )
 }
 
 # ============================================================
