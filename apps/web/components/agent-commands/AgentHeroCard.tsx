@@ -132,11 +132,11 @@ export function AgentHeroCard({
       aria-label={`${agent.name} agent card. Press Enter to ${isExpanded ? "collapse" : "expand"}.`}
       className={cn(
         "group relative cursor-pointer overflow-hidden rounded-2xl",
-        "border border-border/50 bg-card/50 backdrop-blur-sm",
+        "border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl",
         "outline-none ring-offset-2 ring-offset-background",
         "focus-visible:ring-2 focus-visible:ring-primary",
         "transition-all duration-300",
-        personality.borderHover
+        "hover:border-white/[0.15] hover:bg-white/[0.04] hover:shadow-lg hover:shadow-primary/10"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -158,11 +158,18 @@ export function AgentHeroCard({
       {/* Glow effect on hover */}
       <motion.div
         className={cn(
-          "pointer-events-none absolute -inset-px rounded-2xl opacity-0 blur-xl transition-opacity duration-500",
+          "pointer-events-none absolute -inset-px rounded-2xl opacity-0 blur-2xl transition-opacity duration-500",
           personality.bgGlow
         )}
-        animate={{ opacity: isHovered ? 1 : 0 }}
+        animate={{ opacity: isHovered ? 0.6 : 0 }}
       />
+
+      {/* Decorative corner glow */}
+      <div className={cn(
+        "absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-0 transition-opacity duration-500",
+        personality.bgGlow,
+        isHovered && "opacity-40"
+      )} />
 
       {/* Gradient header */}
       <div
@@ -175,19 +182,19 @@ export function AgentHeroCard({
         {/* Agent icon with animated ring */}
         <motion.div
           className="relative"
-          animate={isHovered ? { scale: 1.05 } : { scale: 1 }}
+          animate={isHovered ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
           transition={springs.snappy}
         >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold text-white backdrop-blur-sm shadow-lg">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold text-white backdrop-blur-sm shadow-lg shadow-white/10">
             {agent.icon}
           </div>
           {/* Animated ring - pulses on hover */}
           {isHovered && (
             <motion.div
-              className="absolute -inset-1 rounded-xl border-2 border-white/40"
-              initial={{ scale: 1, opacity: 0.6 }}
-              animate={{ scale: 1.15, opacity: 0 }}
-              transition={{ duration: 0.8, repeat: Infinity, ease: "easeOut" }}
+              className="absolute -inset-1.5 rounded-2xl border-2 border-white/50"
+              initial={{ scale: 1, opacity: 0.8 }}
+              animate={{ scale: 1.2, opacity: 0 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeOut" }}
             />
           )}
         </motion.div>
@@ -269,13 +276,13 @@ export function AgentHeroCard({
             transition={springs.smooth}
             className="overflow-hidden"
           >
-            <div className="flex items-center justify-between border-t border-border/30 px-5 py-3">
-              <span className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between border-t border-white/[0.06] px-5 py-3 bg-black/20">
+              <span className="text-sm text-white/60">
                 {agent.model}
               </span>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-white/40">
                 <span>{agent.examples.length} commands</span>
-                <span className="text-border">·</span>
+                <span className="text-white/20">·</span>
                 <span>{agent.tips.length} tips</span>
               </div>
             </div>

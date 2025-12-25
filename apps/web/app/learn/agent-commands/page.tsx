@@ -13,7 +13,6 @@ import {
   Keyboard,
   X,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { CodeBlock } from "@/components/command-card";
 import { motion, AnimatePresence, springs, staggerContainer, fadeUp } from "@/components/motion";
 import { useScrollReveal } from "@/lib/hooks/useScrollReveal";
@@ -226,17 +225,19 @@ export default function AgentCommandsPage() {
         >
           <motion.div
             className="mb-4 flex justify-center"
-            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
             transition={springs.snappy}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 shadow-lg shadow-primary/20">
-              <Terminal className="h-8 w-8 text-primary" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 shadow-lg shadow-primary/30">
+              <Terminal className="h-8 w-8 text-white" />
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-2xl bg-primary/50 blur-xl opacity-50" />
             </div>
           </motion.div>
-          <h1 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
+          <h1 className="mb-3 text-3xl font-bold tracking-tight text-white md:text-4xl">
             Agent Commands
           </h1>
-          <p className="mx-auto max-w-xl text-base text-muted-foreground sm:text-lg">
+          <p className="mx-auto max-w-xl text-base text-white/60 sm:text-lg">
             Quick reference for Claude Code, Codex CLI, and Gemini CLI. Click any card to explore commands and tips.
           </p>
         </motion.div>
@@ -248,20 +249,20 @@ export default function AgentCommandsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springs.smooth, delay: 0.1 }}
         >
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
           <input
             type="text"
             placeholder="Search agents, commands, or features... (press / to focus)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search agents, commands, or features"
-            className="w-full rounded-xl border border-border/50 bg-card/50 py-3 pl-12 pr-4 text-foreground backdrop-blur-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.02] py-3.5 pl-12 pr-4 text-white backdrop-blur-xl placeholder:text-white/40 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-300"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />
@@ -273,17 +274,21 @@ export default function AgentCommandsPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -2, scale: 1.01 }}
           transition={{ ...springs.smooth, delay: 0.15 }}
-          className="mb-8 sm:mb-10"
+          className="group mb-8 sm:mb-10"
         >
-          <Card className="overflow-hidden border-primary/20 bg-primary/5 backdrop-blur-sm">
-            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Zap className="h-5 w-5 text-primary" />
+          <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-violet-500/10 backdrop-blur-xl transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/20">
+            {/* Decorative glow */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/20 rounded-full blur-3xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
+
+            <div className="relative flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:p-6">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-500 shadow-lg shadow-primary/30 group-hover:shadow-primary/50 group-hover:scale-110 transition-all duration-300">
+                <Zap className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
-                <h2 className="mb-1 font-semibold">Quick Start</h2>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="mb-1 text-lg font-bold text-white group-hover:text-primary transition-colors">Quick Start</h2>
+                <p className="text-sm text-white/60 group-hover:text-white/70 transition-colors">
                   All three agents are pre-installed. Just type the alias:
                 </p>
               </div>
@@ -293,21 +298,26 @@ export default function AgentCommandsPage() {
                   { alias: "cod", label: "Codex", gradient: "from-emerald-400 to-teal-500" },
                   { alias: "gmi", label: "Gemini", gradient: "from-blue-400 to-indigo-500" },
                 ].map((item) => (
-                  <div key={item.alias} className="flex items-center gap-2">
+                  <motion.div
+                    key={item.alias}
+                    className="flex items-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
                     <code className={cn(
-                      "rounded-lg px-3 py-1.5 font-mono text-sm font-medium text-white",
+                      "rounded-xl px-4 py-2 font-mono text-sm font-bold text-white shadow-lg",
                       `bg-gradient-to-r ${item.gradient}`
                     )}>
                       {item.alias}
                     </code>
-                    <span className="hidden text-sm text-muted-foreground sm:inline">
+                    <span className="hidden text-sm text-white/50 sm:inline">
                       {item.label}
                     </span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </Card>
+          </div>
         </motion.div>
 
         {/* Agent cards - responsive layout */}
@@ -385,19 +395,27 @@ export default function AgentCommandsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -4, scale: 1.01 }}
           transition={{ ...springs.smooth, delay: 0.3 }}
-          className="mt-10 sm:mt-12"
+          className="group mt-10 sm:mt-12"
         >
-          <Card className="overflow-hidden border-border/50 bg-card/50 p-6 backdrop-blur-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-              <BookOpen className="h-5 w-5 text-primary" />
-              Multi-Agent Workflow with NTM
-            </h2>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Use NTM (Named Tmux Manager) to run multiple agents in parallel:
-            </p>
-            <CodeBlock
-              code={`# Spawn 2 Claude, 1 Codex, 1 Gemini in parallel
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 backdrop-blur-xl transition-all duration-300 group-hover:border-white/[0.15] group-hover:bg-white/[0.04] group-hover:shadow-lg group-hover:shadow-primary/10">
+            {/* Decorative glow */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
+
+            <div className="relative">
+              <h2 className="mb-4 flex items-center gap-3 text-lg font-bold text-white group-hover:text-primary transition-colors">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30 group-hover:border-violet-500/50 group-hover:scale-110 transition-all duration-300">
+                  <BookOpen className="h-5 w-5 text-violet-400" />
+                </div>
+                Multi-Agent Workflow with NTM
+              </h2>
+              <p className="mb-4 text-sm text-white/60 group-hover:text-white/70 transition-colors">
+                Use NTM (Named Tmux Manager) to run multiple agents in parallel:
+              </p>
+              <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-black/30">
+                <CodeBlock
+                  code={`# Spawn 2 Claude, 1 Codex, 1 Gemini in parallel
 ntm spawn myproject --cc=2 --cod=1 --gmi=1
 
 # Send prompt to all Claude agents
@@ -405,33 +423,36 @@ ntm send myproject --cc "implement the new feature"
 
 # Send prompt to all agents
 ntm send myproject "review and test your changes"`}
-              language="bash"
-            />
-            <div className="mt-4">
-              <Link
-                href="/learn/ntm-palette"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-              >
-                Learn more about NTM commands
-                <ChevronRight className="h-4 w-4" />
-              </Link>
+                  language="bash"
+                />
+              </div>
+              <div className="mt-5">
+                <Link
+                  href="/learn/ntm-palette"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors group/link"
+                >
+                  <span className="group-hover/link:underline">Learn more about NTM commands</span>
+                  <ChevronRight className="h-4 w-4 group-hover/link:translate-x-1 transition-transform" />
+                </Link>
+              </div>
             </div>
-          </Card>
+          </div>
         </motion.div>
 
         {/* Footer */}
         <motion.div
-          className="mt-10 text-center text-sm text-muted-foreground sm:mt-12"
+          className="mt-10 text-center sm:mt-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ ...springs.smooth, delay: 0.4 }}
         >
-          <p>
-            Back to{" "}
-            <Link href="/learn" className="text-primary hover:underline">
-              Learning Hub &rarr;
-            </Link>
-          </p>
+          <Link
+            href="/learn"
+            className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-primary transition-colors group"
+          >
+            <span>Back to Learning Hub</span>
+            <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
         </motion.div>
       </div>
 
@@ -442,26 +463,26 @@ ntm send myproject "review and test your changes"`}
       <AnimatePresence>
         {showKeyboardHints && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowKeyboardHints(false)}
           >
             <motion.div
-              className="mx-4 w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-xl"
+              className="mx-4 w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/90 p-6 shadow-2xl backdrop-blur-xl"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={springs.snappy}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Keyboard Shortcuts</h3>
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">Keyboard Shortcuts</h3>
                 <button
                   type="button"
                   onClick={() => setShowKeyboardHints(false)}
-                  className="rounded-lg p-2 text-muted-foreground hover:bg-muted"
+                  className="rounded-lg p-2 text-white/50 hover:text-white hover:bg-white/[0.05] transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -474,9 +495,9 @@ ntm send myproject "review and test your changes"`}
                   { key: "Esc", action: "Collapse all" },
                   { key: "?", action: "Toggle this menu" },
                 ].map((shortcut) => (
-                  <div key={shortcut.key} className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{shortcut.action}</span>
-                    <kbd className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                  <div key={shortcut.key} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.02] transition-colors">
+                    <span className="text-sm text-white/60">{shortcut.action}</span>
+                    <kbd className="rounded-lg bg-white/[0.05] border border-white/[0.08] px-2.5 py-1 font-mono text-xs text-white/80">
                       {shortcut.key}
                     </kbd>
                   </div>

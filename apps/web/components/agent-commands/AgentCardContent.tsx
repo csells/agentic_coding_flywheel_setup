@@ -61,9 +61,9 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
           transition={springs.smooth}
           className="overflow-hidden"
         >
-          <div className="border-t border-border/30">
+          <div className="border-t border-white/[0.06] bg-black/20">
             {/* Tab navigation */}
-            <div className="flex border-b border-border/30">
+            <div className="flex border-b border-white/[0.06]">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -74,11 +74,11 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
                   }}
                   className={cn(
                     "flex flex-1 items-center justify-center gap-2 px-4 py-3",
-                    "text-sm font-medium transition-colors",
+                    "text-sm font-medium transition-all duration-300",
                     "min-h-[48px]", // Touch target
                     activeTab === tab.id
-                      ? "border-b-2 border-primary text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "border-b-2 border-primary text-white bg-white/[0.02]"
+                      : "text-white/50 hover:text-white/80 hover:bg-white/[0.02]"
                   )}
                 >
                   {tab.icon}
@@ -127,20 +127,21 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
                       {agent.tips.map((tip, i) => (
                         <motion.li
                           key={i}
-                          className="flex items-start gap-3 rounded-lg bg-muted/30 p-3"
+                          className="group/tip flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all duration-300 hover:border-primary/30 hover:bg-white/[0.04]"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ x: 4, scale: 1.01 }}
                           transition={{ ...springs.smooth, delay: i * 0.05 }}
                         >
                           <div
                             className={cn(
-                              "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                              "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg group-hover/tip:scale-110 transition-transform duration-300",
                               personality.bgGlow
                             )}
                           >
-                            <Sparkles className="h-3 w-3 text-primary" />
+                            <Sparkles className="h-3.5 w-3.5 text-primary" />
                           </div>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-white/60 group-hover/tip:text-white/80 transition-colors">
                             {tip}
                           </span>
                         </motion.li>
@@ -157,7 +158,7 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
                     exit={{ opacity: 0, x: 10 }}
                     transition={springs.snappy}
                   >
-                    <p className="mb-4 text-sm text-muted-foreground">
+                    <p className="mb-4 text-sm text-white/50">
                       All these commands launch {agent.name}. Copy and paste into
                       your terminal.
                     </p>
@@ -168,20 +169,21 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
                           type="button"
                           onClick={() => handleCopy(alias)}
                           className={cn(
-                            "group flex items-center justify-between gap-3 rounded-xl border p-4",
-                            "min-h-[56px] transition-all",
+                            "group/alias flex items-center justify-between gap-3 rounded-xl border p-4",
+                            "min-h-[56px] transition-all duration-300",
                             copiedAlias === alias
-                              ? "border-[oklch(0.72_0.19_145)] bg-[oklch(0.72_0.19_145/0.1)]"
-                              : "border-border/50 bg-muted/30 hover:border-primary/40 hover:bg-primary/5"
+                              ? "border-emerald-500/50 bg-emerald-500/10"
+                              : "border-white/[0.06] bg-white/[0.02] hover:border-primary/40 hover:bg-white/[0.04]"
                           )}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ x: 4, scale: 1.02 }}
                           transition={{ ...springs.smooth, delay: i * 0.05 }}
                           whileTap={{ scale: 0.98 }}
                         >
                           <div className="flex items-center gap-3">
-                            <Terminal className="h-4 w-4 text-muted-foreground" />
-                            <code className="font-mono text-base">{alias}</code>
+                            <Terminal className="h-4 w-4 text-white/40 group-hover/alias:text-primary transition-colors" />
+                            <code className="font-mono text-base text-white/80">{alias}</code>
                           </div>
                           <AnimatePresence mode="wait">
                             {copiedAlias === alias ? (
@@ -190,7 +192,7 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 exit={{ scale: 0 }}
-                                className="flex items-center gap-1 text-[oklch(0.72_0.19_145)]"
+                                className="flex items-center gap-1 text-emerald-400"
                               >
                                 <Check className="h-4 w-4" />
                                 <span className="text-xs font-medium">
@@ -203,7 +205,7 @@ export function AgentCardContent({ agent, isExpanded }: AgentCardContentProps) {
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 exit={{ scale: 0 }}
-                                className="flex items-center gap-1 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                className="flex items-center gap-1 text-white/40 opacity-0 transition-opacity group-hover/alias:opacity-100"
                               >
                                 <Copy className="h-4 w-4" />
                                 <span className="hidden text-xs sm:inline">
