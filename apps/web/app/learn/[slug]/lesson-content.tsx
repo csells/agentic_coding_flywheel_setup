@@ -404,12 +404,18 @@ export function LessonContent({ lesson, content }: Props) {
                   rehypePlugins={[rehypeHighlight]}
                   components={{
                     // Demote all headings by 1 level since lesson.title is the page h1
-                    h1: ({ children, ...props }) => <h2 {...props}>{children}</h2>,
-                    h2: ({ children, ...props }) => <h3 {...props}>{children}</h3>,
-                    h3: ({ children, ...props }) => <h4 {...props}>{children}</h4>,
-                    h4: ({ children, ...props }) => <h5 {...props}>{children}</h5>,
-                    h5: ({ children, ...props }) => <h6 {...props}>{children}</h6>,
-                    h6: ({ children, ...props }) => <h6 {...props}>{children}</h6>,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    h1: ({ children, node, ...props }) => <h2 {...props}>{children}</h2>,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    h2: ({ children, node, ...props }) => <h3 {...props}>{children}</h3>,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    h3: ({ children, node, ...props }) => <h4 {...props}>{children}</h4>,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    h4: ({ children, node, ...props }) => <h5 {...props}>{children}</h5>,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    h5: ({ children, node, ...props }) => <h6 {...props}>{children}</h6>,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    h6: ({ children, node, ...props }) => <h6 {...props}>{children}</h6>,
                   }}
                 >
                   {content}

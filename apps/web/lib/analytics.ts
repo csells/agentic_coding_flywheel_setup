@@ -10,8 +10,8 @@ import { TOTAL_STEPS } from './wizardSteps';
 declare global {
   interface Window {
     gtag: (
-      command: 'config' | 'event' | 'set' | 'consent',
-      targetId: string,
+      command: 'js' | 'config' | 'event' | 'set' | 'consent',
+      targetId: string | Date,
       config?: Record<string, unknown>
     ) => void;
     dataLayer: unknown[];

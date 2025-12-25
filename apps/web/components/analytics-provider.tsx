@@ -31,6 +31,24 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
   const scrollDepthsReached = useRef<Set<number>>(new Set());
   const pageStartTime = useRef<number>(0);
   const timeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasInitializedGa = useRef<boolean>(false);
+
+  // Initialize GA stub early (no inline script injection)
+  useEffect(() => {
+    if (!gaId) return;
+
+    window.dataLayer = window.dataLayer || [];
+    if (!window.gtag) {
+      window.gtag = ((...args: unknown[]) => {
+        window.dataLayer.push(args);
+      }) as unknown as Window['gtag'];
+    }
+
+    if (!hasInitializedGa.current) {
+      window.gtag('js', new Date());
+      hasInitializedGa.current = true;
+    }
+  }, [gaId]);
 
   // Track page views on route change
   useEffect(() => {
@@ -46,6 +64,17 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     window.gtag?.('config', gaId, {
       page_path: url,
       page_title: document.title,
+      cookie_flags: 'SameSite=None;Secure',
+      send_page_view: true,
+      allow_google_signals: true,
+      allow_ad_personalization_signals: false,
+      custom_map: {
+        dimension1: 'user_type',
+        dimension2: 'wizard_step',
+        dimension3: 'selected_os',
+        dimension4: 'vps_provider',
+        dimension5: 'terminal_app',
+      },
     });
 
     // Track page performance after load
@@ -198,25 +227,6 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     <>
       {/* Google Analytics Script */}
       <Script {...gaExternalScriptProps} />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${gaId}', {
-  page_path: window.location.pathname,
-  cookie_flags: 'SameSite=None;Secure',
-  send_page_view: true,
-  allow_google_signals: true,
-  allow_ad_personalization_signals: false,
-  custom_map: {
-    'dimension1': 'user_type',
-    'dimension2': 'wizard_step',
-    'dimension3': 'selected_os',
-    'dimension4': 'vps_provider',
-    'dimension5': 'terminal_app'
-  }
-});`}
-      </Script>
       {children}
     </>
   );
