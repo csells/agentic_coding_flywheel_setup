@@ -2423,9 +2423,23 @@ install_languages_legacy_lang() {
     # Create node symlink to bun for Node.js compatibility
     # Many tools (codex, gemini, etc.) have #!/usr/bin/env node shebangs
     local node_link="$TARGET_HOME/.bun/bin/node"
-    if [[ -x "$bun_bin" ]] && [[ ! -e "$node_link" ]]; then
-        log_detail "Creating node symlink for Bun compatibility"
-        try_step "Creating node symlink" run_as_target ln -s "$bun_bin" "$node_link" || log_warn "Failed to create node symlink"
+    if [[ -x "$bun_bin" ]]; then
+        # Idempotency: handle an existing broken symlink and avoid clobbering a real node binary.
+        if [[ -L "$node_link" ]]; then
+            local current_node_target=""
+            if command -v readlink &>/dev/null; then
+                current_node_target="$(readlink "$node_link" 2>/dev/null || true)"
+            fi
+            if [[ "$current_node_target" != "$bun_bin" ]]; then
+                log_detail "Updating node symlink for Bun compatibility"
+                try_step "Updating node symlink" run_as_target ln -sf "$bun_bin" "$node_link" || log_warn "Failed to update node symlink"
+            fi
+        elif [[ ! -e "$node_link" ]]; then
+            log_detail "Creating node symlink for Bun compatibility"
+            try_step "Creating node symlink" run_as_target ln -s "$bun_bin" "$node_link" || log_warn "Failed to create node symlink"
+        else
+            log_detail "node already exists in $TARGET_HOME/.bun/bin (leaving as-is)"
+        fi
     fi
 
     # Rust nightly (install as target user)
