@@ -608,6 +608,76 @@ function generateVerifiedInstallerSnippet(module: Module): string[] {
   return lines;
 }
 
+type NonCommandInstallEntryLabel = 'TODO' | 'NOTE';
+
+function unwrapOptionalQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function looksLikeDescriptionSentence(value: string): boolean {
+  // Keep this conservative: false positives would skip real install commands.
+  // Prefer common imperative verbs used in descriptions.
+  const prefixes = [
+    'Install ',
+    'Ensure ',
+    'Configure ',
+    'Set up ',
+    'Setup ',
+    'Create ',
+    'Write ',
+    'Copy ',
+    'Add ',
+    'Remove ',
+    'Link ',
+    'Enable ',
+    'Disable ',
+    'Restart ',
+    'Start ',
+    'Stop ',
+    'Open ',
+    'Select ',
+    'Choose ',
+    'Run ',
+  ];
+
+  return prefixes.some((p) => value.startsWith(p));
+}
+
+function classifyNonCommandInstallEntry(
+  raw: string
+): { label: NonCommandInstallEntryLabel; text: string } | null {
+  // Multi-line install entries are handled separately via heredocs.
+  if (raw.includes('\n')) return null;
+
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  const directiveMatch = /^(TODO|NOTE):\s*(.*)$/i.exec(trimmed);
+  if (directiveMatch) {
+    const label = directiveMatch[1].toUpperCase() as NonCommandInstallEntryLabel;
+    const text = directiveMatch[2].trim();
+    return { label, text: text || trimmed };
+  }
+
+  const unquoted = unwrapOptionalQuotes(trimmed);
+  if (looksLikeDescriptionSentence(unquoted)) {
+    return { label: 'TODO', text: unquoted };
+  }
+
+  // Back-compat: a literal leading quote in the string indicates a description-only entry.
+  if (trimmed.startsWith('"')) {
+    return { label: 'TODO', text: unquoted };
+  }
+
+  return null;
+}
+
 /**
  * Generate the install commands for a module
  * Uses run_as_*_shell heredocs for proper user context execution
@@ -626,10 +696,10 @@ function generateInstallCommands(module: Module): string[] {
 
   // Process remaining install commands via heredocs
   for (const cmd of module.install) {
-    // Check if it's a description (not an actual command)
-    if (cmd.startsWith('"')) {
+    const nonCommand = classifyNonCommandInstallEntry(cmd);
+    if (nonCommand) {
       lines.push(`    # ${cmd}`);
-      lines.push(`    log_info "TODO: ${escapeBash(cmd)}"`);
+      lines.push(`    log_info "${nonCommand.label}: ${escapeBash(nonCommand.text)}"`);
     } else if (cmd.includes('\n') || cmd.startsWith('|')) {
       // Multi-line command (from YAML literal block)
       const cleanCmd = cmd.replace(/^\|?\n?/, '').trim();

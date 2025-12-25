@@ -15,6 +15,56 @@ import type {
   ValidationWarning,
 } from './types.js';
 
+function unwrapOptionalQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+function looksLikeDescriptionSentence(value: string): boolean {
+  const prefixes = [
+    'Install ',
+    'Ensure ',
+    'Configure ',
+    'Set up ',
+    'Setup ',
+    'Create ',
+    'Write ',
+    'Copy ',
+    'Add ',
+    'Remove ',
+    'Link ',
+    'Enable ',
+    'Disable ',
+    'Restart ',
+    'Start ',
+    'Stop ',
+    'Open ',
+    'Select ',
+    'Choose ',
+    'Run ',
+  ];
+
+  return prefixes.some((p) => value.startsWith(p));
+}
+
+function looksLikeDescriptionOnlyInstallEntry(raw: string): boolean {
+  if (raw.includes('\n')) return false;
+
+  const unquoted = unwrapOptionalQuotes(raw);
+  if (!unquoted) return false;
+  if (/^(TODO|NOTE):/i.test(unquoted)) return true;
+  if (looksLikeDescriptionSentence(unquoted)) return true;
+  // Back-compat: a literal leading quote in the string indicates a description-only entry.
+  if (raw.trimStart().startsWith('"')) return true;
+  return false;
+}
+
 /**
  * Parse a YAML manifest file from a path
  *
@@ -194,9 +244,7 @@ export function validateManifest(manifest: unknown): ValidationResult {
     if (module.install.length === 0) {
       continue;
     }
-    const hasRealInstall = module.install.some(
-      (cmd) => !cmd.startsWith('"') && !cmd.includes('Ensure') && !cmd.includes('Install ')
-    );
+    const hasRealInstall = module.install.some((cmd) => !looksLikeDescriptionOnlyInstallEntry(cmd));
     if (!hasRealInstall) {
       warnings.push({
         path: `modules.${module.id}.install`,
