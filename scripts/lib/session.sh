@@ -334,9 +334,10 @@ sanitize_session_export() {
     read -r -d '' jq_filter <<'JQ_EOF'
 def sanitize_string:
     if type == "string" then
-        gsub("sk-[a-zA-Z0-9]{20,}"; "[REDACTED]") |
+        gsub("sk-[a-zA-Z0-9_-]{20,}"; "[REDACTED]") |
         gsub("sk-ant-[a-zA-Z0-9_-]{20,}"; "[REDACTED]") |
         gsub("AIza[a-zA-Z0-9_-]{35}"; "[REDACTED]") |
+        gsub("github_pat_[a-zA-Z0-9_]{50,}"; "[REDACTED]") |
         gsub("ghp_[a-zA-Z0-9]{36}"; "[REDACTED]") |
         gsub("gho_[a-zA-Z0-9]{36}"; "[REDACTED]") |
         gsub("ghs_[a-zA-Z0-9]{36}"; "[REDACTED]") |
