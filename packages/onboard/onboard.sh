@@ -223,54 +223,72 @@ get_next_incomplete() {
 mark_completed() {
     local lesson=$1
 
-	if command -v jq &>/dev/null; then
-	    local tmp
-	    tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || {
+    if command -v jq &>/dev/null; then
+        local tmp
+        local progress_dir
+        progress_dir="$(dirname "$PROGRESS_FILE")"
+        mkdir -p "$progress_dir" 2>/dev/null || true
+        tmp=$(mktemp "${progress_dir}/.acfs_onboard.XXXXXX" 2>/dev/null) || {
             echo -e "${YELLOW}Warning: could not save progress (mktemp failed).${NC}"
             return 0
         }
-	    if jq --argjson lesson "$lesson" '
-	            .completed = (.completed + [$lesson] | unique | sort) |
-	            . as $o |
-	            .current = (
-	                [range(0;9) as $i | select(($o.completed | index($i)) == null) | $i] | first // 8
-	            ) |
-	            .last_accessed = (now | todateiso8601)
-	        ' "$PROGRESS_FILE" > "$tmp"; then
-	        mv "$tmp" "$PROGRESS_FILE"
-	    else
-	        rm -f "$tmp"
-	    fi
-	else
-	    # Fallback: warn user that progress is not saved
-	    echo -e "${YELLOW}Warning: 'jq' not found. Progress will NOT be saved.${NC}"
-	    echo "Please install jq to enable progress tracking."
-	fi
+        if jq --argjson lesson "$lesson" '
+                .completed = (.completed + [$lesson] | unique | sort) |
+                . as $o |
+                .current = (
+                    [range(0;9) as $i | select(($o.completed | index($i)) == null) | $i] | first // 8
+                ) |
+                .last_accessed = (now | todateiso8601)
+            ' "$PROGRESS_FILE" > "$tmp"; then
+            mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
+                rm -f -- "$tmp" 2>/dev/null || true
+                echo -e "${YELLOW}Warning: could not save progress (mv failed).${NC}"
+                return 0
+            }
+        else
+            rm -f -- "$tmp" 2>/dev/null || true
+        fi
+    else
+        # Fallback: warn user that progress is not saved
+        echo -e "${YELLOW}Warning: 'jq' not found. Progress will NOT be saved.${NC}"
+        echo "Please install jq to enable progress tracking."
+    fi
 }
 
 # Update current lesson without marking complete
 set_current() {
     local lesson=$1
 
-	if command -v jq &>/dev/null; then
-	    local tmp
-	    tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || {
+    if command -v jq &>/dev/null; then
+        local tmp
+        local progress_dir
+        progress_dir="$(dirname "$PROGRESS_FILE")"
+        mkdir -p "$progress_dir" 2>/dev/null || true
+        tmp=$(mktemp "${progress_dir}/.acfs_onboard.XXXXXX" 2>/dev/null) || {
             echo -e "${YELLOW}Warning: could not update progress (mktemp failed).${NC}"
             return 0
         }
-	    if jq --argjson lesson "$lesson" '
-	            .current = $lesson |
-	            .last_accessed = (now | todateiso8601)
-	        ' "$PROGRESS_FILE" > "$tmp"; then
-	        mv "$tmp" "$PROGRESS_FILE"
-	    else
-	        rm -f "$tmp"
-	    fi
-	fi
+        if jq --argjson lesson "$lesson" '
+                .current = $lesson |
+                .last_accessed = (now | todateiso8601)
+            ' "$PROGRESS_FILE" > "$tmp"; then
+            mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
+                rm -f -- "$tmp" 2>/dev/null || true
+                echo -e "${YELLOW}Warning: could not update progress (mv failed).${NC}"
+                return 0
+            }
+        else
+            rm -f -- "$tmp" 2>/dev/null || true
+        fi
+    fi
 }
 
 # Reset progress
 reset_progress() {
+    local progress_dir
+    progress_dir="$(dirname "$PROGRESS_FILE")"
+    mkdir -p "$progress_dir" 2>/dev/null || true
+
     if [[ -f "$PROGRESS_FILE" ]]; then
         local backup
         backup="${PROGRESS_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
@@ -280,7 +298,32 @@ reset_progress() {
             echo -e "${YELLOW}Warning: could not back up progress file; continuing.${NC}"
         fi
     fi
-    init_progress
+    local now
+    now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    local tmp
+    tmp=$(mktemp "${progress_dir}/.acfs_onboard.XXXXXX" 2>/dev/null) || {
+        echo -e "${YELLOW}Warning: could not reset progress (mktemp failed).${NC}"
+        return 0
+    }
+    if cat > "$tmp" <<EOF
+{
+  "completed": [],
+  "current": 0,
+  "started_at": "$now",
+  "last_accessed": "$now"
+}
+EOF
+    then
+        mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
+            rm -f -- "$tmp" 2>/dev/null || true
+            echo -e "${YELLOW}Warning: could not reset progress (mv failed).${NC}"
+            return 0
+        }
+    else
+        rm -f -- "$tmp" 2>/dev/null || true
+        echo -e "${YELLOW}Warning: could not reset progress (write failed).${NC}"
+        return 0
+    fi
     echo -e "${GREEN}Progress reset!${NC}"
 }
 

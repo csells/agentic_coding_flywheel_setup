@@ -366,8 +366,14 @@ install_go_latest() {
     esac
 
     # Get latest version
-    local version
-    version=$(curl --proto '=https' --proto-redir '=https' -sL 'https://go.dev/VERSION?m=text' | head -1) || version="go1.23.4"
+    local version="go1.23.4"
+    local version_response=""
+    version_response="$(curl --proto '=https' --proto-redir '=https' -fsSL --max-time 10 'https://go.dev/VERSION?m=text' 2>/dev/null)" || version_response=""
+    local fetched_version="${version_response%%$'\n'*}"
+    fetched_version="${fetched_version%%$'\r'}"
+    if [[ "$fetched_version" =~ ^go[0-9]+(\.[0-9]+)*$ ]]; then
+        version="$fetched_version"
+    fi
 
     # Download and install
     local tmpdir
