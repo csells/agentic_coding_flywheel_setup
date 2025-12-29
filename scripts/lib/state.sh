@@ -1491,8 +1491,8 @@ confirm_resume() {
         _confirm_resume_log_warn "  Previous failure at: $failed_name"
     fi
 
-    # Only prompt if --interactive flag AND stdin is a TTY
-    if [[ "${ACFS_INTERACTIVE:-}" == "true" ]] && [[ -t 0 ]]; then
+    # Only prompt if --interactive was requested and we have a controlling TTY.
+    if [[ "${ACFS_INTERACTIVE:-}" == "true" ]] && (exec 3<>/dev/tty) 2>/dev/null; then
         echo "" >&2
         echo "Options:" >&2
         echo "  [R] Resume from $last_phase_name (default)" >&2
@@ -1502,8 +1502,8 @@ confirm_resume() {
 
         local choice
         if [[ "${HAS_GUM:-false}" == "true" ]] && command -v gum &>/dev/null; then
-            # Use gum for nicer selection
-            choice=$(gum choose "Resume" "Fresh install" "Abort" 2>/dev/null) || choice="Resume"
+            # Use gum for nicer selection (render UI to the controlling TTY; capture selection on stdout).
+            choice=$(gum choose "Resume" "Fresh install" "Abort" < /dev/tty 2> /dev/tty) || choice="Resume"
             case "$choice" in
                 "Fresh install")
                     _confirm_resume_log_info "Starting fresh install..."
@@ -1524,7 +1524,11 @@ confirm_resume() {
             esac
         else
             # Fallback to read prompt
-            read -r -p "Choice [R/f/a]: " choice
+            if [[ -t 0 ]]; then
+                read -r -p "Choice [R/f/a]: " choice
+            else
+                read -r -p "Choice [R/f/a]: " choice < /dev/tty
+            fi
             case "${choice,,}" in
                 f|fresh)
                     _confirm_resume_log_info "Starting fresh install..."

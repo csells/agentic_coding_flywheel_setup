@@ -90,7 +90,9 @@ NO_DEPS=false
 # Resume/reinstall options (used by state.sh confirm_resume)
 export ACFS_FORCE_RESUME=false
 export ACFS_FORCE_REINSTALL=false
-export ACFS_INTERACTIVE=false
+# NOTE: When unset/empty, downstream libs default to interactive behavior when a TTY is available.
+# install.sh forces non-interactive behavior in --yes mode.
+export ACFS_INTERACTIVE="${ACFS_INTERACTIVE:-}"
 RESET_STATE_ONLY=false
 
 # Preflight options
@@ -125,133 +127,17 @@ fi
 export _ACFS_LOGGING_SH_LOADED=1
 
 # ============================================================
-# Source context tracking library for try_step() wrapper
+# Minimal error-tracking fallbacks
+# These are replaced once scripts/lib/error_tracking.sh is sourced (detect_environment()).
 # ============================================================
-_source_context_lib() {
-    # Already loaded?
-    if [[ -n "${ACFS_CONTEXT_LOADED:-}" ]]; then
-        return 0
-    fi
-
-    # Try local file first (when running from repo)
-    if [[ -n "${SCRIPT_DIR:-}" ]] && [[ -f "$SCRIPT_DIR/scripts/lib/context.sh" ]]; then
-        # shellcheck source=scripts/lib/context.sh
-        source "$SCRIPT_DIR/scripts/lib/context.sh"
-        return 0
-    fi
-
-    # Try relative path (when running from repo root)
-    if [[ -f "./scripts/lib/context.sh" ]]; then
-        source "./scripts/lib/context.sh"
-        return 0
-    fi
-
-    # Download for curl|bash scenario (if curl available)
-    if command -v curl &>/dev/null; then
-        local tmp_context=""
-        if command -v mktemp &>/dev/null; then
-            tmp_context="$(mktemp "${TMPDIR:-/tmp}/acfs-context.XXXXXX" 2>/dev/null)" || tmp_context=""
-        fi
-        if [[ -n "$tmp_context" ]] && curl "${ACFS_EARLY_CURL_ARGS[@]}" "$ACFS_RAW/scripts/lib/context.sh" -o "$tmp_context" 2>/dev/null; then
-            source "$tmp_context"
-            rm -f "$tmp_context"
-            return 0
-        fi
-    fi
-
-    # Fallback: define minimal no-op stubs so install.sh still works
-    set_phase() { :; }
-    try_step() { shift; "$@"; }
-    try_step_eval() { shift; bash -e -o pipefail -c "$1"; }
-    return 0
-}
-_source_context_lib
+type -t set_phase &>/dev/null || set_phase() { :; }
+type -t try_step &>/dev/null || try_step() { shift; "$@"; }
+type -t try_step_eval &>/dev/null || try_step_eval() { shift; bash -e -o pipefail -c "$1"; }
 
 # ============================================================
-# Source reliability libraries for state tracking & reporting
-# (mjt.5.8: Integrate manifest-driven execution with resume/state)
+# Installer libraries are sourced later in main() via detect_environment(), after
+# bootstrapping the repo archive for curl|bash runs (prevents mixed refs).
 # ============================================================
-_source_reliability_libs() {
-    # Already loaded?
-    if [[ -n "${ACFS_RELIABILITY_LOADED:-}" ]]; then
-        return 0
-    fi
-
-    local loaded_state=false
-    local loaded_report=false
-
-    # Try local files first (when running from repo)
-    if [[ -n "${SCRIPT_DIR:-}" ]]; then
-        local state_lib="$SCRIPT_DIR/scripts/lib/state.sh"
-        local report_lib="$SCRIPT_DIR/scripts/lib/report.sh"
-
-        if [[ -f "$state_lib" ]]; then
-            # shellcheck source=scripts/lib/state.sh
-            source "$state_lib" && loaded_state=true
-        fi
-
-        if [[ -f "$report_lib" ]]; then
-            # shellcheck source=scripts/lib/report.sh
-            source "$report_lib" && loaded_report=true
-        fi
-    fi
-
-    # If local files weren't loaded, try downloading (curl|bash scenario)
-    if [[ "$loaded_state" != "true" || "$loaded_report" != "true" ]]; then
-        if command -v curl &>/dev/null; then
-            local tmp_state=""
-            local tmp_report=""
-
-            if [[ "$loaded_state" != "true" ]]; then
-                if command -v mktemp &>/dev/null; then
-                    tmp_state="$(mktemp "${TMPDIR:-/tmp}/acfs-state.XXXXXX" 2>/dev/null)" || tmp_state=""
-                fi
-                if [[ -n "$tmp_state" ]] && curl "${ACFS_EARLY_CURL_ARGS[@]}" "$ACFS_RAW/scripts/lib/state.sh" -o "$tmp_state" 2>/dev/null; then
-                    source "$tmp_state" && loaded_state=true
-                    rm -f "$tmp_state"
-                fi
-            fi
-
-            if [[ "$loaded_report" != "true" ]]; then
-                if command -v mktemp &>/dev/null; then
-                    tmp_report="$(mktemp "${TMPDIR:-/tmp}/acfs-report.XXXXXX" 2>/dev/null)" || tmp_report=""
-                fi
-                if [[ -n "$tmp_report" ]] && curl "${ACFS_EARLY_CURL_ARGS[@]}" "$ACFS_RAW/scripts/lib/report.sh" -o "$tmp_report" 2>/dev/null; then
-                    source "$tmp_report" && loaded_report=true
-                    rm -f "$tmp_report"
-                fi
-            fi
-        fi
-    fi
-
-    # Define fallback stubs for any functions that weren't loaded
-    # This ensures the installer works even if libs fail to load
-    if ! type -t state_init &>/dev/null; then
-        state_init() { :; }
-    fi
-    if ! type -t state_phase_start &>/dev/null; then
-        state_phase_start() { :; }
-    fi
-    if ! type -t state_phase_complete &>/dev/null; then
-        state_phase_complete() { :; }
-    fi
-    if ! type -t state_phase_fail &>/dev/null; then
-        state_phase_fail() { :; }
-    fi
-    if ! type -t confirm_resume &>/dev/null; then
-        confirm_resume() { return 1; }  # Fresh install
-    fi
-    if ! type -t report_failure &>/dev/null; then
-        report_failure() { echo "Installation failed" >&2; }
-    fi
-    if ! type -t report_success &>/dev/null; then
-        report_success() { echo "Installation complete" >&2; }
-    fi
-
-    export ACFS_RELIABILITY_LOADED=1
-    return 0
-}
-_source_reliability_libs
 
 # ============================================================
 # Source Ubuntu upgrade library for auto-upgrade functionality (nb4)
@@ -259,6 +145,14 @@ _source_reliability_libs
 _source_ubuntu_upgrade_lib() {
     # Already loaded?
     if [[ -n "${ACFS_UBUNTU_UPGRADE_LOADED:-}" ]]; then
+        return 0
+    fi
+
+    # Prefer bootstrapped libs when available (curl|bash mode), to avoid mixed refs.
+    if [[ -n "${ACFS_LIB_DIR:-}" ]] && [[ -f "$ACFS_LIB_DIR/ubuntu_upgrade.sh" ]]; then
+        # shellcheck source=scripts/lib/ubuntu_upgrade.sh
+        source "$ACFS_LIB_DIR/ubuntu_upgrade.sh"
+        export ACFS_UBUNTU_UPGRADE_LOADED=1
         return 0
     fi
 
@@ -836,10 +730,29 @@ detect_environment() {
         source "$ACFS_LIB_DIR/state.sh"
     fi
 
+    # Source error pattern matcher (report.sh uses get_suggested_fix when available).
+    if [[ -f "$ACFS_LIB_DIR/errors.sh" ]]; then
+        # shellcheck source=scripts/lib/errors.sh
+        source "$ACFS_LIB_DIR/errors.sh"
+    fi
+
+    # Source structured failure/success reporting (mjt.5.8).
+    if [[ -f "$ACFS_LIB_DIR/report.sh" ]]; then
+        # shellcheck source=scripts/lib/report.sh
+        source "$ACFS_LIB_DIR/report.sh"
+    fi
+
     # Source error tracking for try_step wrappers (mjt.5.8)
     if [[ -f "$ACFS_LIB_DIR/error_tracking.sh" ]]; then
         # shellcheck source=scripts/lib/error_tracking.sh
         source "$ACFS_LIB_DIR/error_tracking.sh"
+    fi
+
+    # Source Ubuntu upgrade library from the same lib dir when available (nb4).
+    if [[ -f "$ACFS_LIB_DIR/ubuntu_upgrade.sh" ]]; then
+        # shellcheck source=scripts/lib/ubuntu_upgrade.sh
+        source "$ACFS_LIB_DIR/ubuntu_upgrade.sh"
+        export ACFS_UBUNTU_UPGRADE_LOADED=1
     fi
 
     # Source tailscale installer (bt5)
@@ -1043,7 +956,7 @@ run_preflight_checks() {
             if command -v mktemp &>/dev/null; then
                 preflight_tmp="$(mktemp "${TMPDIR:-/tmp}/acfs-preflight.XXXXXX" 2>/dev/null)" || preflight_tmp=""
             fi
-            if [[ -n "$preflight_tmp" ]] && acfs_curl "$ACFS_RAW/scripts/preflight.sh" -o "$preflight_tmp" 2>/dev/null; then
+            if [[ -n "$preflight_tmp" ]] && acfs_curl -o "$preflight_tmp" "$ACFS_RAW/scripts/preflight.sh" 2>/dev/null; then
                 chmod +x "$preflight_tmp"
                 preflight_script="$preflight_tmp"
             else
@@ -1193,9 +1106,7 @@ bootstrap_repo_archive() {
     log_detail "Extracting runtime assets"
     if ! tar -xzf "$tmp_archive" -C "$tmp_dir" --strip-components=1 \
         --wildcards --wildcards-match-slash \
-        "*/scripts/lib/**" \
-        "*/scripts/generated/**" \
-        "*/scripts/preflight.sh" \
+        "*/scripts/**" \
         "*/acfs/**" \
         "*/checksums.yaml" \
         "*/acfs.manifest.yaml" \
@@ -3833,6 +3744,11 @@ $summary_content"
 # ============================================================
 main() {
     parse_args "$@"
+
+    # --yes should always behave non-interactively (skip prompts), regardless of flag order.
+    if [[ "$YES_MODE" == "true" ]]; then
+        export ACFS_INTERACTIVE=false
+    fi
 
     if [[ -z "${SCRIPT_DIR:-}" ]]; then
         bootstrap_repo_archive

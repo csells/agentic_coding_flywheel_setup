@@ -223,6 +223,22 @@ try_step() {
     return "$exit_code"
 }
 
+# Execute a command string with try_step semantics (for pipelines/compound commands)
+# Usage: try_step_eval "description" "command string"
+try_step_eval() {
+    local description="$1"
+    local command_str="${2:-}"
+
+    if [[ -z "$command_str" ]]; then
+        if type -t log_error &>/dev/null; then
+            log_error "try_step_eval: missing command string for: $description"
+        fi
+        return 1
+    fi
+
+    try_step "$description" bash -e -o pipefail -c "$command_str"
+}
+
 # Execute a command that can fail without aborting
 # Usage: try_step_optional "description" command [args...]
 # Returns: Command exit code (but doesn't update error state on failure)

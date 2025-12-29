@@ -24,7 +24,14 @@ fi
 # Check if running in interactive mode
 # Returns 0 if interactive, 1 if non-interactive
 _acfs_is_interactive() {
-    [[ "${ACFS_INTERACTIVE:-true}" == "true" ]] && [[ -t 0 ]]
+    [[ "${ACFS_INTERACTIVE:-true}" == "true" ]] || return 1
+
+    # Prefer /dev/tty so curl|bash (stdin is a pipe) can still prompt safely.
+    if [[ -e /dev/tty ]] && (exec 3<>/dev/tty) 2>/dev/null; then
+        return 0
+    fi
+
+    [[ -t 0 ]]
 }
 
 # curl defaults: enforce HTTPS (including redirects) when supported
@@ -674,7 +681,13 @@ handle_all_checksum_mismatches() {
     echo "" >&2
 
     local choice
-    read -r -p "Choice [s/A]: " choice < /dev/tty
+    if [[ -t 0 ]]; then
+        read -r -p "Choice [s/A]: " choice
+    elif [[ -r /dev/tty ]]; then
+        read -r -p "Choice [s/A]: " choice < /dev/tty
+    else
+        choice=""
+    fi
 
     case "${choice,,}" in
         s|skip)
@@ -853,7 +866,13 @@ handle_checksum_mismatch() {
     fi
 
     local choice
-    read -r -p "Choice [s/A]: " choice < /dev/tty
+    if [[ -t 0 ]]; then
+        read -r -p "Choice [s/A]: " choice
+    elif [[ -r /dev/tty ]]; then
+        read -r -p "Choice [s/A]: " choice < /dev/tty
+    else
+        choice=""
+    fi
 
     case "${choice,,}" in
         s|skip)

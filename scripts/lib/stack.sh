@@ -57,7 +57,13 @@ _stack_is_interactive() {
         return $?
     fi
 
-    [[ "${ACFS_INTERACTIVE:-true}" == "true" ]] && [[ -t 0 ]]
+    [[ "${ACFS_INTERACTIVE:-true}" == "true" ]] || return 1
+
+    if [[ -e /dev/tty ]] && (exec 3<>/dev/tty) 2>/dev/null; then
+        return 0
+    fi
+
+    [[ -t 0 ]]
 }
 
 # Get the sudo command if needed
