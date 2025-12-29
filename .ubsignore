@@ -19,7 +19,7 @@ packages/manifest/src/generate.ts
 
 # UBS currently mis-parses TSX JSX props as global assignments (false positives).
 # We rely on the website's lint + type-check for TSX.
-apps/web/**/*.tsx
+*.tsx
 
 # Playwright artifacts
 apps/web/playwright-report/

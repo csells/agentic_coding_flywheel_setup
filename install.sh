@@ -996,7 +996,7 @@ run_preflight_checks() {
 }
 
 ACFS_CURL_BASE_ARGS=(-fsSL)
-if curl --help all 2>/dev/null | grep -q -- '--proto'; then
+if command -v curl &>/dev/null && curl --help all 2>/dev/null | grep -q -- '--proto'; then
     ACFS_CURL_BASE_ARGS=(--proto '=https' --proto-redir '=https' -fsSL)
 fi
 

@@ -773,12 +773,12 @@ export default function WorkflowPage() {
 
             <WorkflowStep number={4} title="Analyze with Beads Viewer" color="bg-emerald-500">
               <p className="mb-3">
-                Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs">bv</code> to visualize and prioritize:
+                Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs">bv</code> (robot mode) to visualize and prioritize:
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-border/50 p-3 bg-card/50">
-                  <code className="text-sm font-mono text-primary">bv</code>
-                  <p className="text-xs text-muted-foreground mt-1">Visual bead browser TUI</p>
+                  <code className="text-sm font-mono text-primary">bv --robot-triage</code>
+                  <p className="text-xs text-muted-foreground mt-1">Deterministic triage output (recommended)</p>
                 </div>
                 <div className="rounded-lg border border-border/50 p-3 bg-card/50">
                   <code className="text-sm font-mono text-primary">bd ready</code>
