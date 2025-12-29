@@ -299,6 +299,21 @@ install_gum_early() {
         return 0
     fi
 
+    # Only attempt early gum install on supported Ubuntu systems.
+    # Preflight/ensure_ubuntu will stop execution later, but this prevents
+    # partial modifications (apt repo/key) on unsupported OS versions.
+    if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        source /etc/os-release
+        local version_id="${VERSION_ID:-}"
+        local version_major="${version_id%%.*}"
+        if [[ "${ID:-}" != "ubuntu" ]] || [[ -z "$version_id" ]] || [[ "$version_major" -lt 22 ]]; then
+            return 0
+        fi
+    else
+        return 0
+    fi
+
     # Need curl to fetch gum - if curl isn't installed yet, skip early install
     # (gum will be installed later in install_cli_tools after ensure_base_deps)
     if ! command -v curl &>/dev/null; then
@@ -1688,23 +1703,31 @@ validate_target_user() {
 
 ensure_ubuntu() {
     if [[ ! -f /etc/os-release ]]; then
-        log_fatal "Cannot detect OS. This script requires Ubuntu 24.04+ or 25.x"
+        log_fatal "Cannot detect OS. ACFS supports Ubuntu 22.04+ only."
     fi
 
     # shellcheck disable=SC1091
     source /etc/os-release
 
-    if [[ "$ID" != "ubuntu" ]]; then
-        log_warn "This script is designed for Ubuntu but detected: $ID"
-        log_warn "Proceeding anyway, but some things may not work."
+    if [[ "${ID:-}" != "ubuntu" ]]; then
+        log_fatal "Unsupported OS: ${PRETTY_NAME:-${ID:-unknown}}. ACFS supports Ubuntu 22.04+ only."
     fi
 
-    VERSION_MAJOR="${VERSION_ID%%.*}"
+    local version_id="${VERSION_ID:-}"
+    if [[ -z "$version_id" ]]; then
+        log_fatal "Cannot detect Ubuntu version (VERSION_ID missing)"
+    fi
+
+    VERSION_MAJOR="${version_id%%.*}"
+    if [[ "$VERSION_MAJOR" -lt 22 ]]; then
+        log_fatal "Unsupported Ubuntu version: ${version_id}. ACFS supports Ubuntu 22.04+ only."
+    fi
+
     if [[ "$VERSION_MAJOR" -lt 24 ]]; then
-        log_warn "Ubuntu $VERSION_ID detected. Recommended: Ubuntu 24.04+ or 25.x"
+        log_warn "Ubuntu $version_id detected. Recommended: Ubuntu 24.04+ or 25.x"
     fi
 
-    log_detail "OS: Ubuntu $VERSION_ID"
+    log_detail "OS: Ubuntu $version_id"
 }
 
 # ============================================================

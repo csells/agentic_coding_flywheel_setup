@@ -148,18 +148,21 @@ check_os() {
     # shellcheck source=/dev/null
     source /etc/os-release
 
+    local pretty_name="${PRETTY_NAME:-${ID:-unknown}}"
+
     if [[ "${ID:-}" != "ubuntu" ]]; then
-        warn "Untested OS: ${ID:-unknown}" "ACFS is designed for Ubuntu, may work on ${ID}"
+        fail "Operating System: ${pretty_name}" "ACFS supports Ubuntu 22.04+ only"
+        return
+    fi
+
+    local version="${VERSION_ID:-0}"
+    local major="${version%%.*}"
+    if (( major >= 24 )); then
+        pass "Operating System: Ubuntu ${VERSION_ID}"
+    elif (( major >= 22 )); then
+        pass "Operating System: Ubuntu ${VERSION_ID}" "22.04+ supported, 24.04+ recommended"
     else
-        local version="${VERSION_ID:-0}"
-        local major="${version%%.*}"
-        if (( major >= 24 )); then
-            pass "Operating System: Ubuntu ${VERSION_ID}"
-        elif (( major >= 22 )); then
-            pass "Operating System: Ubuntu ${VERSION_ID}" "22.04+ supported, 24.04+ recommended"
-        else
-            warn "Ubuntu ${VERSION_ID}" "Version 22.04+ recommended for best compatibility"
-        fi
+        fail "Operating System: Ubuntu ${VERSION_ID}" "ACFS supports Ubuntu 22.04+ only. Upgrade Ubuntu or provision a newer VPS image."
     fi
 }
 
