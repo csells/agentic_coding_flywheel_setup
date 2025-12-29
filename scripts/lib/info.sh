@@ -514,6 +514,25 @@ info_render_html() {
     os_version=$(info_get_os_version)
     os_codename=$(info_get_os_codename)
 
+    # Escape values for safe HTML rendering (prevent broken markup if hostname/etc contain
+    # special characters). This output may be served via `acfs dashboard serve`.
+    _info_html_escape() {
+        local s="$1"
+        s="${s//&/&amp;}"
+        s="${s//</&lt;}"
+        s="${s//>/&gt;}"
+        s="${s//\"/&quot;}"
+        s="${s//\'/&#39;}"
+        printf '%s' "$s"
+    }
+
+    local hostname_html ip_html uptime_html os_version_html os_codename_html
+    hostname_html="$(_info_html_escape "$hostname")"
+    ip_html="$(_info_html_escape "$ip")"
+    uptime_html="$(_info_html_escape "$uptime")"
+    os_version_html="$(_info_html_escape "$os_version")"
+    os_codename_html="$(_info_html_escape "$os_codename")"
+
     local lessons_completed lessons_total
     lessons_completed=$(info_get_lessons_completed)
     lessons_total=$(info_get_lessons_total)
@@ -525,7 +544,7 @@ info_render_html() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACFS Dashboard - $hostname</title>
+    <title>ACFS Dashboard - $hostname_html</title>
     <style>
         :root {
             --bg: #1e1e2e;
@@ -584,10 +603,10 @@ info_render_html() {
         <div class="card">
             <h2>System</h2>
             <div class="grid">
-                <span class="label">Hostname</span><span class="value">$hostname</span>
-                <span class="label">IP Address</span><span class="value">$ip</span>
-                <span class="label">Uptime</span><span>$uptime</span>
-                <span class="label">OS</span><span>Ubuntu $os_version ($os_codename)</span>
+                <span class="label">Hostname</span><span class="value">$hostname_html</span>
+                <span class="label">IP Address</span><span class="value">$ip_html</span>
+                <span class="label">Uptime</span><span>$uptime_html</span>
+                <span class="label">OS</span><span>Ubuntu $os_version_html ($os_codename_html)</span>
             </div>
         </div>
 
