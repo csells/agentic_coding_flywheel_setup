@@ -244,9 +244,18 @@ get_tailscale_info() {
     fi
 
     if check_tailscale_auth; then
-        local ip hostname
+        local ip hostname status_json
         ip=$(tailscale ip -4 2>/dev/null || echo "unknown")
-        hostname=$(tailscale status --json 2>/dev/null | jq -r '.Self.HostName // "unknown"' 2>/dev/null || echo "unknown")
+        hostname="unknown"
+
+        status_json=$(tailscale status --json 2>/dev/null || echo "")
+        if [[ -n "$status_json" ]]; then
+            if command -v jq &>/dev/null; then
+                hostname=$(printf '%s' "$status_json" | jq -r '.Self.HostName // "unknown"' 2>/dev/null || echo "unknown")
+            else
+                hostname=$(hostname -s 2>/dev/null || hostname 2>/dev/null || echo "unknown")
+            fi
+        fi
         echo "connected: $hostname ($ip)"
         return 0
     else
