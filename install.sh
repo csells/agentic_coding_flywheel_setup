@@ -537,7 +537,8 @@ cleanup() {
         log_error ""
         log_error "To debug:"
         log_error "  1. Check the log: cat $ACFS_LOG_DIR/install.log"
-        log_error "  2. Run: acfs doctor"
+        log_error "  2. If installed, run: acfs doctor (try as $TARGET_USER)"
+        log_error "     (If you ran the installer as root: sudo -u $TARGET_USER -i bash -lc 'acfs doctor')"
         log_error "  3. Re-run this installer (it's safe to run multiple times)"
         log_error ""
     fi

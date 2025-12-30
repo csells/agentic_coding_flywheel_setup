@@ -638,8 +638,18 @@ ubuntu_do_upgrade() {
     # DistUpgradeViewNonInteractive is for fully automated upgrades
     export DEBIAN_FRONTEND=noninteractive
 
+    # Run do-release-upgrade from a world-readable working directory.
+    # Some environments (e.g., running from /root with a restrictive umask) can
+    # trigger _apt permission errors when the upgrader downloads artifacts.
+    local upgrade_work_dir="${ACFS_RESUME_DIR:-/var/lib/acfs}"
+    if ! mkdir -p "$upgrade_work_dir" 2>/dev/null; then
+        upgrade_work_dir="/tmp"
+    fi
+    chmod 755 "$upgrade_work_dir" 2>/dev/null || true
+    log_detail "Running do-release-upgrade from: $upgrade_work_dir"
+
     local upgrade_result=0
-    if ! do-release-upgrade -f DistUpgradeViewNonInteractive; then
+    if ! (cd "$upgrade_work_dir" && do-release-upgrade -f DistUpgradeViewNonInteractive); then
         log_error "do-release-upgrade failed"
         upgrade_result=1
     fi
