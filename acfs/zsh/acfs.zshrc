@@ -231,13 +231,17 @@ fi
 # --- ACFS CLI ---
 # Provides `acfs <subcommand>` for post-install utilities
 acfs() {
+  local acfs_home="${ACFS_HOME:-$HOME/.acfs}"
+  local acfs_bin="$HOME/.local/bin/acfs"
   local cmd="${1:-help}"
   shift 1 2>/dev/null || true
 
   case "$cmd" in
     services-setup|services|setup)
-      if [[ -f "$HOME/.acfs/scripts/services-setup.sh" ]]; then
-        bash "$HOME/.acfs/scripts/services-setup.sh" "$@"
+      if [[ -f "$acfs_home/scripts/services-setup.sh" ]]; then
+        bash "$acfs_home/scripts/services-setup.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" services-setup "$@"
       else
         echo "Error: services-setup.sh not found"
         echo "Re-run the ACFS installer to get the latest scripts"
@@ -245,64 +249,85 @@ acfs() {
       fi
       ;;
     doctor|check)
-      if [[ -f "$HOME/.acfs/scripts/lib/doctor.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/doctor.sh" "$@"
+      if [[ -f "$acfs_home/scripts/lib/doctor.sh" ]]; then
+        bash "$acfs_home/scripts/lib/doctor.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" doctor "$@"
       else
         echo "Error: doctor.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     session|sessions)
-      if [[ -f "$HOME/.acfs/scripts/lib/doctor.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/doctor.sh" session "$@"
+      if [[ -f "$acfs_home/scripts/lib/doctor.sh" ]]; then
+        bash "$acfs_home/scripts/lib/doctor.sh" session "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" session "$@"
       else
         echo "Error: doctor.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     update)
-      if [[ -f "$HOME/.acfs/scripts/lib/update.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/update.sh" "$@"
+      if [[ -f "$acfs_home/scripts/lib/update.sh" ]]; then
+        bash "$acfs_home/scripts/lib/update.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" update "$@"
       else
         echo "Error: update.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     continue|status|progress)
-      if [[ -f "$HOME/.acfs/scripts/lib/continue.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/continue.sh" "$@"
+      if [[ -f "$acfs_home/scripts/lib/continue.sh" ]]; then
+        bash "$acfs_home/scripts/lib/continue.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" continue "$@"
       else
         echo "Error: continue.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     info|i)
-      if [[ -f "$HOME/.acfs/scripts/lib/info.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/info.sh" "$@"
+      if [[ -f "$acfs_home/scripts/lib/info.sh" ]]; then
+        bash "$acfs_home/scripts/lib/info.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" info "$@"
       else
         echo "Error: info.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     cheatsheet|cs)
-      if [[ -f "$HOME/.acfs/scripts/lib/cheatsheet.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/cheatsheet.sh" "$@"
+      if [[ -f "$acfs_home/scripts/lib/cheatsheet.sh" ]]; then
+        bash "$acfs_home/scripts/lib/cheatsheet.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" cheatsheet "$@"
       else
         echo "Error: cheatsheet.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     dashboard|dash)
-      if [[ -f "$HOME/.acfs/scripts/lib/dashboard.sh" ]]; then
-        bash "$HOME/.acfs/scripts/lib/dashboard.sh" "$@"
+      if [[ -f "$acfs_home/scripts/lib/dashboard.sh" ]]; then
+        bash "$acfs_home/scripts/lib/dashboard.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" dashboard "$@"
       else
         echo "Error: dashboard.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
         return 1
       fi
       ;;
     version|-v|--version)
-      if [[ -f "$HOME/.acfs/VERSION" ]]; then
-        cat "$HOME/.acfs/VERSION"
+      if [[ -f "$acfs_home/VERSION" ]]; then
+        cat "$acfs_home/VERSION"
       else
         echo "ACFS version unknown"
       fi

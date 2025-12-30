@@ -160,10 +160,6 @@ resolve_session_lib() {
         echo "$SCRIPT_DIR/session.sh"
         return 0
     fi
-    if [[ -f "$SCRIPT_DIR/../scripts/lib/session.sh" ]]; then
-        echo "$SCRIPT_DIR/../scripts/lib/session.sh"
-        return 0
-    fi
     return 1
 }
 
@@ -1566,8 +1562,6 @@ main() {
                 info_script="$HOME/.acfs/scripts/lib/info.sh"
             elif [[ -f "$SCRIPT_DIR/info.sh" ]]; then
                 info_script="$SCRIPT_DIR/info.sh"
-            elif [[ -f "$SCRIPT_DIR/../scripts/lib/info.sh" ]]; then
-                info_script="$SCRIPT_DIR/../scripts/lib/info.sh"
             fi
 
             if [[ -n "$info_script" ]]; then
@@ -1584,8 +1578,6 @@ main() {
                 dashboard_script="$HOME/.acfs/scripts/lib/dashboard.sh"
             elif [[ -f "$SCRIPT_DIR/dashboard.sh" ]]; then
                 dashboard_script="$SCRIPT_DIR/dashboard.sh"
-            elif [[ -f "$SCRIPT_DIR/../scripts/lib/dashboard.sh" ]]; then
-                dashboard_script="$SCRIPT_DIR/../scripts/lib/dashboard.sh"
             fi
 
             if [[ -n "$dashboard_script" ]]; then
@@ -1602,8 +1594,6 @@ main() {
                 continue_script="$HOME/.acfs/scripts/lib/continue.sh"
             elif [[ -f "$SCRIPT_DIR/continue.sh" ]]; then
                 continue_script="$SCRIPT_DIR/continue.sh"
-            elif [[ -f "$SCRIPT_DIR/../scripts/lib/continue.sh" ]]; then
-                continue_script="$SCRIPT_DIR/../scripts/lib/continue.sh"
             fi
 
             if [[ -n "$continue_script" ]]; then
@@ -1620,8 +1610,6 @@ main() {
                 cheatsheet_script="$HOME/.acfs/scripts/lib/cheatsheet.sh"
             elif [[ -f "$SCRIPT_DIR/cheatsheet.sh" ]]; then
                 cheatsheet_script="$SCRIPT_DIR/cheatsheet.sh"
-            elif [[ -f "$SCRIPT_DIR/../scripts/lib/cheatsheet.sh" ]]; then
-                cheatsheet_script="$SCRIPT_DIR/../scripts/lib/cheatsheet.sh"
             fi
 
             if [[ -n "$cheatsheet_script" ]]; then
@@ -1643,8 +1631,6 @@ main() {
                 update_script="$HOME/.acfs/scripts/lib/update.sh"
             elif [[ -f "$SCRIPT_DIR/update.sh" ]]; then
                 update_script="$SCRIPT_DIR/update.sh"
-            elif [[ -f "$SCRIPT_DIR/../scripts/lib/update.sh" ]]; then
-                update_script="$SCRIPT_DIR/../scripts/lib/update.sh"
             fi
 
             if [[ -n "$update_script" ]]; then
@@ -1661,8 +1647,6 @@ main() {
                 services_script="$HOME/.acfs/scripts/services-setup.sh"
             elif [[ -f "$SCRIPT_DIR/../services-setup.sh" ]]; then
                 services_script="$SCRIPT_DIR/../services-setup.sh"
-            elif [[ -f "$SCRIPT_DIR/../scripts/services-setup.sh" ]]; then
-                services_script="$SCRIPT_DIR/../scripts/services-setup.sh"
             fi
 
             if [[ -n "$services_script" ]]; then
