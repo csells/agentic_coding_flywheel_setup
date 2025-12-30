@@ -69,46 +69,45 @@ install_base_filesystem() {
     log_step "Installing base.filesystem"
 
     if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: mkdir -p /data/projects /data/cache (root)"
+        log_info "dry-run: install: # Hardening: refuse to operate on symlinked workspace paths. (root)"
     else
         if ! run_as_root_shell <<'INSTALL_BASE_FILESYSTEM'
+# Hardening: refuse to operate on symlinked workspace paths.
+# Prevents symlink tricks like /data -> / or /data/projects -> /etc.
+for p in /data /data/projects /data/cache; do
+  if [[ -e "$p" && -L "$p" ]]; then
+    echo "ERROR: Refusing to use symlinked path: $p" >&2
+    exit 1
+  fi
+done
+
 mkdir -p /data/projects /data/cache
+chown -h "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" /data /data/projects /data/cache
 INSTALL_BASE_FILESYSTEM
         then
-            log_error "base.filesystem: install command failed: mkdir -p /data/projects /data/cache"
+            log_error "base.filesystem: install command failed: # Hardening: refuse to operate on symlinked workspace paths."
             return 1
         fi
     fi
     if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: chown -R \"\${TARGET_USER:-ubuntu}:\${TARGET_USER:-ubuntu}\" /data (root)"
+        log_info "dry-run: install: target_home=\"\${TARGET_HOME:-/home/ubuntu}\" (root)"
     else
         if ! run_as_root_shell <<'INSTALL_BASE_FILESYSTEM'
-chown -R "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" /data
+target_home="${TARGET_HOME:-/home/ubuntu}"
+if [[ -z "$target_home" || "$target_home" == "/" || "$target_home" != /* ]]; then
+  echo "ERROR: Invalid TARGET_HOME: '${target_home:-<empty>}'" >&2
+  exit 1
+fi
+if [[ -e "$target_home/.acfs" && -L "$target_home/.acfs" ]]; then
+  echo "ERROR: Refusing to use symlinked ACFS dir: $target_home/.acfs" >&2
+  exit 1
+fi
+
+mkdir -p "$target_home/.acfs"
+chown -hR "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" "$target_home/.acfs"
 INSTALL_BASE_FILESYSTEM
         then
-            log_error "base.filesystem: install command failed: chown -R \"\${TARGET_USER:-ubuntu}:\${TARGET_USER:-ubuntu}\" /data"
-            return 1
-        fi
-    fi
-    if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: mkdir -p \"\${TARGET_HOME:-/home/ubuntu}/.acfs\" (root)"
-    else
-        if ! run_as_root_shell <<'INSTALL_BASE_FILESYSTEM'
-mkdir -p "${TARGET_HOME:-/home/ubuntu}/.acfs"
-INSTALL_BASE_FILESYSTEM
-        then
-            log_error "base.filesystem: install command failed: mkdir -p \"\${TARGET_HOME:-/home/ubuntu}/.acfs\""
-            return 1
-        fi
-    fi
-    if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: chown -R \"\${TARGET_USER:-ubuntu}:\${TARGET_USER:-ubuntu}\" \"\${TARGET_HOME:-/home/ubuntu}/.acfs\" (root)"
-    else
-        if ! run_as_root_shell <<'INSTALL_BASE_FILESYSTEM'
-chown -R "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" "${TARGET_HOME:-/home/ubuntu}/.acfs"
-INSTALL_BASE_FILESYSTEM
-        then
-            log_error "base.filesystem: install command failed: chown -R \"\${TARGET_USER:-ubuntu}:\${TARGET_USER:-ubuntu}\" \"\${TARGET_HOME:-/home/ubuntu}/.acfs\""
+            log_error "base.filesystem: install command failed: target_home=\"\${TARGET_HOME:-/home/ubuntu}\""
             return 1
         fi
     fi

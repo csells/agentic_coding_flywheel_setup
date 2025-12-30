@@ -73,10 +73,31 @@ modules:
       run_as: target_user
       command: "test -d /data/projects && test -d ~/.acfs"
     install:
-      - mkdir -p /data/projects /data/cache
-      - chown -R "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" /data
-      - mkdir -p "${TARGET_HOME:-/home/ubuntu}/.acfs"
-      - chown -R "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" "${TARGET_HOME:-/home/ubuntu}/.acfs"
+      - |
+          # Hardening: refuse to operate on symlinked workspace paths.
+          # Prevents symlink tricks like /data -> / or /data/projects -> /etc.
+          for p in /data /data/projects /data/cache; do
+            if [[ -e "$p" && -L "$p" ]]; then
+              echo "ERROR: Refusing to use symlinked path: $p" >&2
+              exit 1
+            fi
+          done
+
+          mkdir -p /data/projects /data/cache
+          chown -h "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" /data /data/projects /data/cache
+      - |
+          target_home="${TARGET_HOME:-/home/ubuntu}"
+          if [[ -z "$target_home" || "$target_home" == "/" || "$target_home" != /* ]]; then
+            echo "ERROR: Invalid TARGET_HOME: '${target_home:-<empty>}'" >&2
+            exit 1
+          fi
+          if [[ -e "$target_home/.acfs" && -L "$target_home/.acfs" ]]; then
+            echo "ERROR: Refusing to use symlinked ACFS dir: $target_home/.acfs" >&2
+            exit 1
+          fi
+
+          mkdir -p "$target_home/.acfs"
+          chown -hR "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" "$target_home/.acfs"
     verify:
       - test -d /data/projects
       - test -d "${TARGET_HOME:-/home/ubuntu}/.acfs"
