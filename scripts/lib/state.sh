@@ -285,6 +285,30 @@ state_write_atomic() {
         return 1
     fi
 
+    # If the installer is running as root but targeting a non-root user,
+    # ensure that user can read the state file. The atomic rename above
+    # replaces the prior file with a root-owned temp file.
+    #
+    # Only do this for state files under TARGET_HOME (per-user state) and
+    # never for system state under /var/lib/acfs.
+    if [[ $EUID -eq 0 ]] && [[ -n "${TARGET_USER:-}" ]] && [[ "$TARGET_USER" != "root" ]]; then
+        local target_home="${TARGET_HOME:-/home/${TARGET_USER}}"
+        if [[ -n "$target_home" ]] && [[ "$target_home" != "/" ]] && [[ "$target_home" == /* ]] && [[ "$file_path" == "$target_home/"* ]]; then
+            local target_group=""
+            if command -v id &>/dev/null; then
+                target_group="$(id -gn "$TARGET_USER" 2>/dev/null || true)"
+            fi
+
+            if [[ -n "$target_group" ]]; then
+                chown "$TARGET_USER:$target_group" "$file_path" 2>/dev/null \
+                    || chown "$TARGET_USER:$TARGET_USER" "$file_path" 2>/dev/null \
+                    || true
+            else
+                chown "$TARGET_USER" "$file_path" 2>/dev/null || true
+            fi
+        fi
+    fi
+
     # Optional: sync the directory entry to ensure the rename is durable
     if command -v sync &>/dev/null; then
         sync "$target_dir" 2>/dev/null || true
