@@ -2149,15 +2149,27 @@ normalize_user() {
     # Create target user if it doesn't exist
     if ! id "$TARGET_USER" &>/dev/null; then
         log_detail "Creating user: $TARGET_USER"
-        try_step "Creating user $TARGET_USER" $SUDO useradd -m -s /bin/bash "$TARGET_USER" || {
-            local useradd_exit=$?
+
+        # We intentionally do NOT use try_step here because user creation can be
+        # a recoverable race (e.g., another process creates the user between the
+        # id check and useradd). Using try_step would record state_phase_fail and
+        # poison resume state even if we recover.
+        local useradd_exit=0
+        local useradd_output=""
+        useradd_output="$($SUDO useradd -m -s /bin/bash "$TARGET_USER" 2>&1)" || useradd_exit=$?
+        if [[ $useradd_exit -ne 0 ]]; then
             if id "$TARGET_USER" &>/dev/null; then
                 log_warn "useradd exited ${useradd_exit}, but user '$TARGET_USER' exists; continuing"
             else
-                log_error "Failed to create user '$TARGET_USER' (useradd exit ${useradd_exit}). Aborting."
+                log_error "Failed to create user '$TARGET_USER' (useradd exit ${useradd_exit})."
+                if [[ -n "$useradd_output" ]]; then
+                    local first_line=""
+                    first_line="$(printf '%s\n' "$useradd_output" | head -n 1)"
+                    [[ -n "$first_line" ]] && log_detail "useradd: $first_line"
+                fi
                 return 1
             fi
-        }
+        fi
         try_step "Adding $TARGET_USER to sudo group" $SUDO usermod -aG sudo "$TARGET_USER" || return 1
     fi
 
