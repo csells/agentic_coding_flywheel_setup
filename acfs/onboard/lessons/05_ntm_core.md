@@ -66,15 +66,6 @@ ntm send myproject "Analyze this codebase and summarize what it does"
 
 This sends the same prompt to **all** agents in the session!
 
-> **Troubleshooting:** If `ntm send` fails with a `cass execution failed` error (for example: “unrecognized subcommand 'robot'”), you can bypass the CASS duplicate-check:
->
-> ```bash
-> ntm send myproject --no-cass-check "Analyze this codebase and summarize what it does"
->
-> # Or use structured output (JSON) for agent workflows:
-> ntm --robot-send myproject --msg "Analyze this codebase and summarize what it does" --all
-> ```
-
 ### Send to Specific Agent Type
 
 ```bash

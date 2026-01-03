@@ -568,54 +568,6 @@ check_optional_command() {
     fi
 }
 
-# Check NTM ↔ CASS compatibility.
-#
-# NTM v1.2.0 calls `cass robot search ...`, but modern CASS uses `cass search ... --robot`.
-# This can break `ntm send` when the CASS duplicate-check path is enabled.
-check_ntm_cass_compat() {
-    # Only relevant when both tools exist.
-    command -v ntm >/dev/null 2>&1 || return 0
-    command -v cass >/dev/null 2>&1 || return 0
-
-    local ntm_version_line=""
-    ntm_version_line="$(ntm --version 2>/dev/null | head -n 1 || true)"
-    [[ -z "$ntm_version_line" ]] && ntm_version_line="$(ntm version 2>/dev/null | head -n 1 || true)"
-
-    local ntm_semver=""
-    if [[ "$ntm_version_line" =~ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-        ntm_semver="${BASH_REMATCH[1]}"
-    fi
-
-    # Only flag the known-bad release; newer NTM releases should fix this.
-    [[ -n "$ntm_semver" ]] || return 0
-    [[ "$ntm_semver" == "1.2.0" ]] || return 0
-
-    # Test with an actual subcommand invocation, not just --help.
-    # `cass robot --help` may succeed on newer CASS (shows search help),
-    # but that doesn't mean `cass robot search "..."` works.
-    local output=""
-    local status=0
-    output="$(cass robot search --dry-run "acfs-wrapper-test" 2>&1)" || status=$?
-
-    if (( status == 0 )); then
-        check "stack.ntm_cass_compat" "NTM↔CASS compatibility" "pass" "ok"
-        return 0
-    fi
-
-    if echo "$output" | grep -qiE "unrecognized subcommand|unknown subcommand|unknown command"; then
-        check "stack.ntm_cass_compat" "NTM↔CASS compatibility" "warn" \
-            "ntm send may fail (CASS has no 'robot' subcommand)" \
-            "Workarounds: ntm send <session> --no-cass-check --all \"...\"  OR  ntm --robot-send <session> --msg \"...\" --all"
-        return 0
-    fi
-
-    local first_line=""
-    first_line="$(printf '%s\n' "$output" | head -n 1)"
-    [[ -z "$first_line" ]] && first_line="cass robot search --dry-run failed"
-    check "stack.ntm_cass_compat" "NTM↔CASS compatibility" "warn" "could not verify ($first_line)" \
-        "Try: cass robot search --dry-run test"
-}
-
 # Check identity
 check_identity() {
     section "Identity"
@@ -924,7 +876,6 @@ check_stack() {
             "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh | bash -s -- --easy-mode"
     fi
 
-    check_ntm_cass_compat
     check_command "stack.cm" "CASS Memory" "cm" \
         "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | bash -s -- --easy-mode"
     check_command "stack.caam" "CAAM" "caam" \
