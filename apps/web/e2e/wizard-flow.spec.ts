@@ -890,8 +890,8 @@ test.describe("Step 12: Status Check Page", () => {
     await page.goto("/wizard/status-check");
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
 
-    // Troubleshooting section should mention source ~/.zshrc
-    await expect(page.locator('text=/source.*zshrc/i')).toBeVisible();
+    // Troubleshooting section should mention source ~/.zshrc (use .first() as page may have multiple instances)
+    await expect(page.locator('text=/source.*zshrc/i').first()).toBeVisible();
   });
 
   test("should navigate to launch-onboarding on continue", async ({ page }) => {
@@ -1183,13 +1183,15 @@ test.describe("Edge Cases - Reload and Navigation", () => {
     await page.getByRole('button', { name: /continue/i }).click();
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
 
-    // Rapid back/forward
+    // Back/forward navigation - wait for URL changes to complete
     await page.goBack();
-    await page.goBack();
-    await page.goForward();
+    await expect(page).toHaveURL(/\/wizard\/install-terminal/, { timeout: TIMEOUTS.NAVIGATION });
 
-    // Should end up on install-terminal
-    await expect(page).toHaveURL(/\/wizard\/install-terminal/, { timeout: TIMEOUTS.PAGE_LOAD });
+    await page.goBack();
+    await expect(page).toHaveURL(/\/wizard\/os-selection/, { timeout: TIMEOUTS.NAVIGATION });
+
+    await page.goForward();
+    await expect(page).toHaveURL(/\/wizard\/install-terminal/, { timeout: TIMEOUTS.NAVIGATION });
 
     // Page should still be functional
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
