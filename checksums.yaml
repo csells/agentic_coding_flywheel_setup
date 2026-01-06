@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-01-05T20:05:41+00:00
+# checksums.yaml - Auto-generated 2026-01-06T00:20:15+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -28,7 +28,7 @@ installers:
 
   uv:
     url: "https://astral.sh/uv/install.sh"
-    sha256: "38a2a3fb4d169fbc5b3533d1690feb9b1d909a74514a18169e1a2371fd4f3104"
+    sha256: "FETCH_FAILED"
 
   ntm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh"
@@ -36,7 +36,7 @@ installers:
 
   cm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh"
-    sha256: "a2bc02ec913ffab25a5a054442d9d0ab5a84e668fece0ca67a3716e575b6f8f9"
+    sha256: "705b8143db3d7c4dadc99aeb03fd952e6905cb74d8017b7b6a132a1b69bb47af"
 
   caam:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh"
